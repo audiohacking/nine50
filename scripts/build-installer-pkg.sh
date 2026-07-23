@@ -38,7 +38,15 @@ while [ $# -gt 0 ]; do
 done
 
 # JUCE places plugin bundles under build/Source/NINE50_artefacts/
+# Multi-config generators (Xcode) add a config subdir like Release/
 ARTEFACTS_DIR="${REPO_ROOT}/build/Source/NINE50_artefacts"
+
+if [ -d "${ARTEFACTS_DIR}/Release/AU/${PLUGIN_AU_NAME}" ]; then
+    ARTEFACTS_DIR="${ARTEFACTS_DIR}/Release"
+elif [ -d "${ARTEFACTS_DIR}/Debug/AU/${PLUGIN_AU_NAME}" ]; then
+    ARTEFACTS_DIR="${ARTEFACTS_DIR}/Debug"
+fi
+
 AU_PATH="${ARTEFACTS_DIR}/AU/${PLUGIN_AU_NAME}"
 VST3_PATH="${ARTEFACTS_DIR}/VST3/${PLUGIN_VST3_NAME}"
 
@@ -48,7 +56,7 @@ if [ ! -d "$AU_PATH" ] || [ ! -d "$VST3_PATH" ]; then
   echo "  cmake --build build --target NINE50 -j8" >&2
   echo "" >&2
   echo "Looking in: ${ARTEFACTS_DIR}" >&2
-  find "${ARTEFACTS_DIR}" -maxdepth 3 -type d \( \
+  find "${REPO_ROOT}/build/Source/NINE50_artefacts" -maxdepth 4 -type d \( \
     -name "*.component" -o -name "*.vst3" \
     \) 2>/dev/null || echo "(no bundles found)"
   exit 1

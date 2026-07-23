@@ -19,16 +19,25 @@ jobs:
       - name: Build
         run: cmake --build build -j8 --config Release
 
-      - name: Package
+      - name: Package (zip)
         run: |
           cd build/Source/NINE50_artefacts/Release
-          zip -r ../NINE50-macOS.zip AU/ VST3/
+          zip -r ../../../../NINE50-macOS.zip AU/ VST3/
 
-      - name: Upload artifact
+      - name: Package (installer .pkg)
+        run: ./scripts/build-installer-pkg.sh --version ${{ github.event.release.tag_name }}
+
+      - name: Upload zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: NINE50-macOS
-          path: build/Source/NINE50_artefacts/NINE50-macOS.zip
+          path: NINE50-macOS.zip
+
+      - name: Upload pkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NINE50-macOS-Installer
+          path: release-artefacts/NINE50-macOS-Installer.pkg
 
   create-release:
     name: Create Release Assets
@@ -37,10 +46,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download macOS artifact
+      - name: Download macOS zip
         uses: actions/download-artifact@v4
         with:
           name: NINE50-macOS
+          path: ./artifacts
+
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: NINE50-macOS-Installer
           path: ./artifacts
 
       - name: Upload release assets
@@ -48,5 +63,6 @@ jobs:
         with:
           files: |
             artifacts/NINE50-macOS.zip
+            artifacts/NINE50-macOS-Installer.pkg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
