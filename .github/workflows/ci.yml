@@ -20,10 +20,10 @@ jobs:
           submodules: true
 
       - name: Configure CMake
-        run: cmake -B build -DBUILD_TESTING=ON
+        run: cmake -B build -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build -j8
+        run: cmake --build build --config Release -j8
 
       - name: Run Tests
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --config Release --output-on-failure
