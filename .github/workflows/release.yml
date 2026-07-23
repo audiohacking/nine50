@@ -30,7 +30,6 @@ jobs:
           name: NINE50-macOS
           path: build/Source/NINE50_artefacts/NINE50-macOS.zip
 
-
   create-release:
     name: Create Release Assets
     needs: [build-macOS]

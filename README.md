@@ -25,8 +25,6 @@ A French-touch sidechain processor with SP950-style lo-fi emulation, inspired by
 ## Requirements
 
 - **macOS**: 10.15 or later
-- **Windows**: Windows 10 or later
-- **Linux**: Not supported (plugin formats require platform-specific SDKs)
 
 ## Installation
 
@@ -40,19 +38,14 @@ Download the latest release from the [Releases page](https://github.com/audiohac
 3. Double-click `NINE50.vst3` or `NINE50.component` to install
 4. Restart your DAW
 
-**Windows**:
-1. Download `NINE50-Windows.zip`
-2. Extract the archive
-3. Copy `NINE50.vst3` to `C:\Program Files\Common Files\VST3\`
-4. Restart your DAW
+> **Windows**: Support planned — coming in a future release.
 
 ### Build from Source
 
 #### Prerequisites
 
-- CMake 3.16+
-- C++17 compatible compiler (Xcode 12+, Visual Studio 2019+, or GCC 9+)
-- On macOS: Xcode Command Line Tools
+- C++17 compatible compiler (Xcode 12+)
+- Xcode Command Line Tools
 
 #### Build Instructions
 
@@ -61,13 +54,13 @@ Download the latest release from the [Releases page](https://github.com/audiohac
 git clone https://github.com/audiohacking/nine50.git
 cd NINE50
 
-# Configure (VST3 + AU on macOS, VST3 on Windows)
+# Configure (VST3 + AU)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 
 # Build
 cmake --build build -j8
 
-# The plugin will be in build/Source/NINE50_artefacts/
+# The plugin will be in build/Source/NINE50_artefacts/Release/
 ```
 
 #### Build with Tests
