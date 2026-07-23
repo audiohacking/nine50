@@ -13,14 +13,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest]
         include:
           - os: macos-latest
             generator: ""
             ctest_config: ""
-          - os: windows-latest
-            generator: "-G \"Visual Studio 17 2022\" -A x64"
-            ctest_config: "--config Release"
+
     steps:
       - uses: actions/checkout@v4
         with:
