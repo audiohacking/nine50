@@ -38,6 +38,48 @@ target_link_libraries(NINE50
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
 
+# Screenshot generation tool
+option(BUILD_SCREENSHOT "Build the screenshot generation tool" OFF)
+
+if(BUILD_SCREENSHOT)
+    juce_add_gui_app(NINE50Screenshot)
+
+    juce_generate_juce_header(NINE50Screenshot)
+
+    target_include_directories(NINE50Screenshot PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+    target_sources(NINE50Screenshot
+        PRIVATE
+            ScreenshotTool.cpp
+            PluginProcessor.cpp
+            PluginProcessor.h
+            PluginEditor.cpp
+            PluginEditor.h
+            GainReductionMeter.cpp
+            GainReductionMeter.h
+            SidechainCompressor.cpp
+            SidechainCompressor.h
+            SP950Emulation.cpp
+            SP950Emulation.h)
+
+    target_compile_definitions(NINE50Screenshot PRIVATE
+        JucePlugin_Name="NINE50"
+        JucePlugin_Build_VST3=0
+        JucePlugin_Build_AU=0
+        JucePlugin_Build_Standalone=0
+        JUCE_MODAL_LOOPS_PERMITTED=1)
+
+    target_link_libraries(NINE50Screenshot
+        PRIVATE
+            juce::juce_audio_processors
+            juce::juce_dsp
+            juce::juce_graphics
+            juce::juce_gui_basics
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_lto_flags
+            juce::juce_recommended_warning_flags)
+endif()
+
 # Testing
 enable_testing()
 

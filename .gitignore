@@ -14,3 +14,10 @@ build_test/
 
 # JUCE
 *.jucer
+
+# Claude Code
+.claude/
+.serena/
+
+# Release artefacts
+release-artefacts/
