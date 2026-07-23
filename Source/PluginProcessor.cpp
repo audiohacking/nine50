@@ -59,10 +59,8 @@ bool NINE50AudioProcessor::hasEditor() const {
 }
 
 bool NINE50AudioProcessor::isSidechainEnabled() const {
-    if (getBusesLayout().inputBuses.size() > 1) {
-        auto& sidechainBus = *getBus(true, 1);
-        return sidechainBus.isInput() && sidechainBus.isEnabled();
-    }
+    if (auto* sidechainBus = getBus(true, 1))
+        return sidechainBus->isInput() && sidechainBus->isEnabled();
     return false;
 }
 
@@ -90,10 +88,9 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
 
     // Get sidechain buffer if available
     juce::AudioBuffer<float> sidechainBuffer;
-    if (getBusesLayout().inputBuses.size() > 1) {
-        auto& sidechainBus = *getBus(true, 1);
-        if (sidechainBus.isInput() && sidechainBus.isEnabled()) {
-            juce::AudioBuffer<float> sidechainData = getBusBuffer(buffer, true, 1);
+    if (auto* sidechainBus = getBus(true, 1)) {
+        if (sidechainBus->isInput() && sidechainBus->isEnabled()) {
+            auto sidechainData = getBusBuffer(buffer, true, 1);
             sidechainBuffer.makeCopyOf(sidechainData);
         }
     }
@@ -142,11 +139,33 @@ const juce::String NINE50AudioProcessor::getOutputChannelName(int channelIndex) 
 }
 
 bool NINE50AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
-    if (layouts.getMainOutputChannelSet() == juce::AudioChannelSet::mono()
-        || layouts.getMainOutputChannelSet() == juce::AudioChannelSet::stereo()) {
-        return true;
+    // Main output must be mono or stereo
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo()) {
+        return false;
     }
-    return false;
+
+    // Main input must match output
+    if (layouts.getMainInputChannelSet() != layouts.getMainOutputChannelSet()) {
+        return false;
+    }
+
+    // Sidechain bus must be either disabled or stereo
+    if (layouts.getChannelSet(true, 1) != juce::AudioChannelSet::disabled()
+        && layouts.getChannelSet(true, 1) != juce::AudioChannelSet::stereo()) {
+        return false;
+    }
+
+    return true;
+}
+
+void NINE50AudioProcessor::busArrangementChanged(const BusesLayout& /*newLayout*/) {
+    // Re-prepare when bus layout changes (e.g. sidechain enabled/disabled)
+    if (getSampleRate() > 0) {
+        const int numChannels = juce::jmin(getMainBusNumInputChannels(), 2);
+        compressor.prepare(getSampleRate(), getBlockSize(), numChannels);
+        sp950.prepare(getSampleRate(), getBlockSize(), numChannels);
+    }
 }
 
 //==============================================================================

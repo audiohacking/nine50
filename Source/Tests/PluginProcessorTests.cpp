@@ -92,12 +92,18 @@ public:
             NINE50AudioProcessor processor;
 
             juce::AudioProcessor::BusesLayout stereoLayout;
+            stereoLayout.inputBuses.set(0, juce::AudioChannelSet::stereo());
             stereoLayout.outputBuses.set(0, juce::AudioChannelSet::stereo());
             expect(processor.isBusesLayoutSupported(stereoLayout), "Stereo layout should be supported");
 
             juce::AudioProcessor::BusesLayout monoLayout;
+            monoLayout.inputBuses.set(0, juce::AudioChannelSet::mono());
             monoLayout.outputBuses.set(0, juce::AudioChannelSet::mono());
             expect(processor.isBusesLayoutSupported(monoLayout), "Mono layout should be supported");
+
+            juce::AudioProcessor::BusesLayout sidechainLayout(stereoLayout);
+            sidechainLayout.inputBuses.set(1, juce::AudioChannelSet::stereo());
+            expect(processor.isBusesLayoutSupported(sidechainLayout), "Stereo + sidechain layout should be supported");
         });
 
         testCase("Process block with no sidechain", [&] {
