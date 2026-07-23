@@ -1,0 +1,16 @@
+# Build directories
+build/
+build_test/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# JUCE
+*.jucer
