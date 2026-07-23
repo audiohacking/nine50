@@ -14,6 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            ctest_config: ""
+          - os: windows-latest
+            ctest_config: "--config Release"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,4 +31,4 @@ jobs:
         run: cmake --build build --config Release -j8
 
       - name: Run Tests
-        run: ctest --test-dir build --config Release --output-on-failure
+        run: ctest --test-dir build ${{ matrix.ctest_config }} --output-on-failure
