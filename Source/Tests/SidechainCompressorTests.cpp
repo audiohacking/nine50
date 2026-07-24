@@ -4,7 +4,7 @@
 class SidechainCompressorTest : public juce::UnitTest {
 public:
     SidechainCompressorTest()
-        : juce::UnitTest("SidechainCompressor", juce::UnitTestCategories::dsp) {}
+        : juce::UnitTest("SidechainCompressor", "nine50") {}
 
     void runTest() override {
         testCase("Initialization", [&] {

@@ -1,5 +1,11 @@
 #include <JuceHeader.h>
 
+namespace
+{
+    // Dedicated category so we never pull in JUCE's own module unit tests.
+    constexpr const char* kNine50TestCategory = "nine50";
+}
+
 //==============================================================================
 class ConsoleLogger final : public juce::Logger
 {
@@ -19,7 +25,7 @@ class ConsoleUnitTestRunner final : public juce::UnitTestRunner
 };
 
 //==============================================================================
-int main (int, char **)
+int main (int, char**)
 {
     ConsoleLogger logger;
     juce::Logger::setCurrentLogger (&logger);
@@ -31,7 +37,13 @@ int main (int, char **)
     }};
 
     ConsoleUnitTestRunner runner;
-    runner.runAllTests();
+    runner.runTestsInCategory (kNine50TestCategory);
 
-    return runner.getNumResults() > 0 && runner.getResult (0)->failures == 0 ? 0 : 1;
+    int failures = 0;
+    for (int i = 0; i < runner.getNumResults(); ++i)
+        if (auto* result = runner.getResult (i))
+            failures += result->failures;
+
+    std::cout << "NINE50 tests complete — failures: " << failures << std::endl;
+    return failures == 0 ? 0 : 1;
 }

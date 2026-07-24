@@ -89,7 +89,7 @@ if(BUILD_SCREENSHOT)
 endif()
 
 # Testing
-enable_testing()
+# (enable_testing / CTest is included from the root CMakeLists.txt)
 
 if(BUILD_TESTING)
     juce_add_console_app(NINE50Tests
@@ -122,7 +122,7 @@ if(BUILD_TESTING)
             BitCrushEmulation.h)
 
     target_compile_definitions(NINE50Tests PRIVATE
-        JUCE_UNIT_TESTS=1
+        JUCE_UNIT_TESTS=0
         JUCE_PLUGINHOST_VST3=1
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
@@ -137,5 +137,5 @@ if(BUILD_TESTING)
             juce::juce_recommended_lto_flags
             juce::juce_recommended_warning_flags)
 
-    add_test(NAME NINE50Tests COMMAND NINE50Tests)
+    add_test(NAME NINE50Tests COMMAND $<TARGET_FILE:NINE50Tests>)
 endif()

@@ -4,7 +4,7 @@
 class BitCrushEmulationTest : public juce::UnitTest {
 public:
     BitCrushEmulationTest()
-        : juce::UnitTest("BitCrushEmulation", juce::UnitTestCategories::dsp) {}
+        : juce::UnitTest("BitCrushEmulation", "nine50") {}
 
     void runTest() override {
         testCase("Initialization", [&] {

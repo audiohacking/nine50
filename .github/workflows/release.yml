@@ -13,6 +13,14 @@ jobs:
         with:
           submodules: true
 
+      - name: Cache JUCE FetchContent
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-juce-9.0.0-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-juce-9.0.0-
+
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 

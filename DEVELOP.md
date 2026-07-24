@@ -49,7 +49,7 @@ Source/
 
 - CMake 3.16+
 - C++17 compiler
-- JUCE (fetched automatically via CMake FetchContent)
+- JUCE 9.0.0 (fetched automatically via CMake FetchContent)
 
 ### Build Commands
 
@@ -79,11 +79,13 @@ cmake --build build -j8 --target NINE50Tests
 ./build/Source/NINE50Tests_artefacts/NINE50Tests
 
 # Run specific category
-./build/Source/NINE50Tests_artefacts/NINE50Tests --category=dsp
+./build/Source/NINE50Tests_artefacts/NINE50Tests --category=nine50
 
 # Run specific test by name
 ./build/Source/NINE50Tests_artefacts/NINE50Tests --name=BitCrushEmulation
 ```
+
+Note: the test runner currently executes the `nine50` category only (see `Tests/Main.cpp`).
 
 ### Writing Tests
 
@@ -96,7 +98,7 @@ Tests use JUCE's `UnitTest` framework. Add new test files to `Source/Tests/` and
 class YourClassTest : public juce::UnitTest {
 public:
     YourClassTest()
-        : juce::UnitTest("YourClass", juce::UnitTestCategories::dsp) {}
+        : juce::UnitTest("YourClass", "nine50") {}
 
     void runTest() override {
         testCase("Description", [&] {
@@ -117,8 +119,7 @@ static YourClassTest yourClassTest;
 
 ### Test Categories
 
-- `dsp` - DSP algorithm tests (BitCrushEmulation, SidechainCompressor)
-- `audioProcessors` - Plugin processor integration tests
+- `nine50` - All NINE50 unit tests (compressor, bitcrush, processor)
 
 ## Parameters
 

@@ -4,7 +4,7 @@
 class PluginProcessorTest : public juce::UnitTest {
 public:
     PluginProcessorTest()
-        : juce::UnitTest("NINE50AudioProcessor", juce::UnitTestCategories::audioProcessors) {}
+        : juce::UnitTest("NINE50AudioProcessor", "nine50") {}
 
     void runTest() override {
         testCase("Processor initialization", [&] {
@@ -61,31 +61,36 @@ public:
         testCase("State save/restore", [&] {
             NINE50AudioProcessor processor;
 
-            // Set some parameter values
-            processor.parameters.getParameter(NINE50AudioProcessor::kThreshold)->setValueNotifyingHost(0.3f);
-            processor.parameters.getParameter(NINE50AudioProcessor::kRatio)->setValueNotifyingHost(0.5f);
-            processor.parameters.getParameter(NINE50AudioProcessor::kDrive)->setValueNotifyingHost(0.7f);
+            auto* thresholdParam = processor.parameters.getParameter(NINE50AudioProcessor::kThreshold);
+            auto* ratioParam = processor.parameters.getParameter(NINE50AudioProcessor::kRatio);
+            auto* driveParam = processor.parameters.getParameter(NINE50AudioProcessor::kDrive);
 
-            // Save state
+            // setValueNotifyingHost takes normalised 0..1 values
+            thresholdParam->setValueNotifyingHost(0.3f);
+            ratioParam->setValueNotifyingHost(0.5f);
+            driveParam->setValueNotifyingHost(0.7f);
+
+            const float savedThreshold = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kThreshold);
+            const float savedRatio = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kRatio);
+            const float savedDrive = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kDrive);
+
             juce::MemoryBlock stateData;
             processor.getStateInformation(stateData);
             expect(stateData.getSize() > 0, "State data should not be empty");
 
-            // Change values
-            processor.parameters.getParameter(NINE50AudioProcessor::kThreshold)->setValueNotifyingHost(0.1f);
-            processor.parameters.getParameter(NINE50AudioProcessor::kRatio)->setValueNotifyingHost(0.2f);
+            thresholdParam->setValueNotifyingHost(0.1f);
+            ratioParam->setValueNotifyingHost(0.2f);
+            driveParam->setValueNotifyingHost(0.4f);
 
-            // Restore state
             processor.setStateInformation(stateData.getData(), static_cast<int>(stateData.getSize()));
 
-            // Values should be restored
-            float threshold = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kThreshold);
-            float ratio = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kRatio);
-            float drive = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kDrive);
+            const float threshold = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kThreshold);
+            const float ratio = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kRatio);
+            const float drive = *processor.parameters.getRawParameterValue(NINE50AudioProcessor::kDrive);
 
-            expect(std::abs(threshold - 0.3f) < 0.01f, "Threshold should be restored");
-            expect(std::abs(ratio - 0.5f) < 0.01f, "Ratio should be restored");
-            expect(std::abs(drive - 0.7f) < 0.01f, "Drive should be restored");
+            expect(std::abs(threshold - savedThreshold) < 0.01f, "Threshold should be restored");
+            expect(std::abs(ratio - savedRatio) < 0.01f, "Ratio should be restored");
+            expect(std::abs(drive - savedDrive) < 0.01f, "Drive should be restored");
         });
 
         testCase("Bus layout support", [&] {
