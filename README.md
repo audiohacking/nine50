@@ -2,7 +2,7 @@
 
 A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combines an Alesis 3630-style sidechain compressor with Emu SP-1200 / Akai S950 bitcrush and downsample emulation in a single VST3/AU plugin.
 
-![NINE50 Screenshot](docs/screenshot.png)
+![NINE50 Screenshot](docs/nine50-ui.png)
 
 ## Features
 
