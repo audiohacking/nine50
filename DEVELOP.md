@@ -2,7 +2,7 @@
 
 ## Overview
 
-NINE50 is a French-touch sidechain processor with SP950-style lo-fi emulation, inspired by Daft Punk's *Homework* era. It combines an Alesis 3630-style sidechain compressor with Emu SP-1200/Akai S950 emulation in a single VST3/AU plugin.
+NINE50 is a French-touch sidechain processor inspired by Daft Punk's *Homework* era. It combines an Alesis 3630-style sidechain compressor with Emu SP-1200 / Akai S950 bitcrush and downsample emulation in a single VST3/AU plugin.
 
 ## Architecture
 
@@ -13,12 +13,14 @@ Source/
 ├── PluginProcessor.h/.cpp     # Audio processing + parameters
 ├── PluginEditor.h/.cpp        # GUI with sliders and displays
 ├── SidechainCompressor.h/.cpp # Compressor DSP class
-├── SP950Emulation.h/.cpp      # Lo-fi emulation DSP class
+├── BitCrushEmulation.h/.cpp       # SP-1200 / S950 bitcrush DSP class
 ├── GainReductionMeter.h/.cpp  # Visual meter component
+├── NINE50LookAndFeel.h/.cpp   # Custom amber/analog LookAndFeel
+├── PresetManager.h/.cpp       # Factory + user preset save/load
 └── Tests/
     ├── Main.cpp               # Unit test runner entry point
     ├── SidechainCompressorTests.cpp
-    ├── SP950EmulationTests.cpp
+    ├── BitCrushEmulationTests.cpp
     └── PluginProcessorTests.cpp
 ```
 
@@ -30,7 +32,7 @@ Source/
    - Gain reduction computed via `(env_dB - threshold) * (1 - 1/ratio)`
    - Applied to main buffer with optional makeup gain
 
-2. **SP950 Emulation**
+2. **Bitcrush / Downsample (SP-1200 / S950)**
    - Drive (input gain) applied to signal
    - Layout routing (Mono Sum, Stereo, Mid/Side, etc.)
    - Detune (pitch shift via Lagrange interpolation)
@@ -80,7 +82,7 @@ cmake --build build -j8 --target NINE50Tests
 ./build/Source/NINE50Tests_artefacts/NINE50Tests --category=dsp
 
 # Run specific test by name
-./build/Source/NINE50Tests_artefacts/NINE50Tests --name=SP950Emulation
+./build/Source/NINE50Tests_artefacts/NINE50Tests --name=BitCrushEmulation
 ```
 
 ### Writing Tests
@@ -115,7 +117,7 @@ static YourClassTest yourClassTest;
 
 ### Test Categories
 
-- `dsp` - DSP algorithm tests (SP950, SidechainCompressor)
+- `dsp` - DSP algorithm tests (BitCrushEmulation, SidechainCompressor)
 - `audioProcessors` - Plugin processor integration tests
 
 ## Parameters
@@ -131,8 +133,9 @@ static YourClassTest yourClassTest;
 | Makeup | 0 to 30 dB | 0 dB | Output gain compensation |
 | HPF | Off/100/200/300 Hz | Off | Sidechain high-pass filter |
 | Link | Off/On | Off | Link L/R sidechain detection |
+| Comp On | Off/On | On | Stage enable (ON/BYPASS) |
 
-### SP950 Emulation
+### Bitcrush / Downsample
 
 | Parameter | Range | Default | Notes |
 |-----------|-------|---------|-------|
@@ -145,6 +148,7 @@ static YourClassTest yourClassTest;
 | Mix | 0-100% | 100% | Dry/wet |
 | Out | -12 to +12 dB | 0 dB | Output gain |
 | Link | Off/On | Off | Link Drive/Out gain |
+| Crush On | Off/On | On | Stage enable (ON/BYPASS) |
 
 ## Coding Guidelines
 
@@ -172,7 +176,21 @@ static YourClassTest yourClassTest;
 - Isolate specific behaviors by using mix=0 (dry) or mix=1 (wet) as appropriate
 - Compare against original signal when testing bypass behavior
 
-## Bus Configuration
+## Presets
+
+Factory presets are compiled into `PresetManager` and exposed via the AudioProcessor program API (DAW preset menus) and the in-plugin preset combo.
+
+User presets are XML files with a `.nine50` extension stored at:
+
+```
+~/Library/Audio/Presets/NINE50/
+```
+
+UI controls (header bar):
+- Preset combo — load factory or user presets
+- **SAVE** — overwrite current user preset, or Save As for factory presets
+- **...** menu — Save As, Delete, Reveal folder, Init
+
 
 ```
 Input:  Stereo (required)

@@ -1,22 +1,22 @@
 #include <JuceHeader.h>
-#include "SP950Emulation.h"
+#include "BitCrushEmulation.h"
 
-class SP950EmulationTest : public juce::UnitTest {
+class BitCrushEmulationTest : public juce::UnitTest {
 public:
-    SP950EmulationTest()
-        : juce::UnitTest("SP950Emulation", juce::UnitTestCategories::dsp) {}
+    BitCrushEmulationTest()
+        : juce::UnitTest("BitCrushEmulation", juce::UnitTestCategories::dsp) {}
 
     void runTest() override {
         testCase("Initialization", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
             // If we get here without crashing, initialization worked
             expect(true);
         });
 
         testCase("Bit reduction reduces precision", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -32,7 +32,7 @@ public:
             original.makeCopyOf(buffer);
 
             // Process with bit reduction (mix=100%, no filter, no detune)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
 
             // Bit-reduced signal should differ from original
             bool differs = false;
@@ -46,8 +46,8 @@ public:
         });
 
         testCase("Filter reduces high frequencies", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -62,7 +62,7 @@ public:
             original.makeCopyOf(buffer);
 
             // Process with filter at low cutoff (val=0 means ~100Hz)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 0.0f, 3, 1.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 0.0f, 3, 1.0f, 0.0f, false);
 
             // High frequencies should be attenuated
             float originalRMS = 0.0f, filteredRMS = 0.0f;
@@ -77,8 +77,8 @@ public:
         });
 
         testCase("Filter bypass at 99", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -92,7 +92,7 @@ public:
             original.makeCopyOf(buffer);
 
             // Process with filter bypassed (val=99), mix=0 (dry only)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
 
             // With mix=0, signal should be identical to original
             float maxDiff = 0.0f;
@@ -103,8 +103,8 @@ public:
         });
 
         testCase("Layout routing - Mono Sum", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -114,7 +114,7 @@ public:
             }
 
             // Process with Mono Sum layout, no bit reduction (mix=0)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 0, 0.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 0, 0.0f, 0.0f, false);
 
             // Both channels should be identical (mono sum)
             for (int i = 0; i < 512; ++i) {
@@ -124,8 +124,8 @@ public:
         });
 
         testCase("Layout routing - Stereo (no change)", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -138,7 +138,7 @@ public:
             original.makeCopyOf(buffer);
 
             // Process with Stereo layout, no processing (mix=0)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
 
             // Channels should be unchanged
             for (int i = 0; i < 512; ++i) {
@@ -150,8 +150,8 @@ public:
         });
 
         testCase("Mix dry/wet", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -165,7 +165,7 @@ public:
             original.makeCopyOf(buffer);
 
             // Process with mix=0 (dry only)
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 0.0f, 0.0f, false);
 
             // Should be identical to original (no processing with mix=0)
             float maxDiff = 0.0f;
@@ -176,8 +176,8 @@ public:
         });
 
         testCase("Drive gain", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -187,7 +187,7 @@ public:
             }
 
             // Process with drive +6dB (mix=100% wet, filter bypassed)
-            sp950.process(buffer, 6.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
+            bitCrush.process(buffer, 6.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
 
             // Output should be approximately 0.1 * 10^(6/20) ≈ 0.2 (6dB gain)
             // Check RMS since sample rate reduction causes oscillation on constant input
@@ -202,8 +202,8 @@ public:
         });
 
         testCase("Reset clears state", [&] {
-            SP950Emulation sp950;
-            sp950.prepare(44100.0, 512, 2);
+            BitCrushEmulation bitCrush;
+            bitCrush.prepare(44100.0, 512, 2);
 
             juce::AudioBuffer<float> buffer(2, 512);
             buffer.clear();
@@ -212,8 +212,8 @@ public:
                 buffer.setSample(1, i, 0.5f);
             }
 
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
-            sp950.reset();
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
+            bitCrush.reset();
 
             // After reset, processing should still work
             buffer.clear();
@@ -221,10 +221,10 @@ public:
                 buffer.setSample(0, i, 0.5f);
                 buffer.setSample(1, i, 0.5f);
             }
-            sp950.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
+            bitCrush.process(buffer, 0.0f, 0.0f, false, false, 99.0f, 3, 1.0f, 0.0f, false);
             expect(true, "Processing after reset should work");
         });
     }
 };
 
-static SP950EmulationTest sp950EmulationTest;
+static BitCrushEmulationTest bitCrushEmulationTest;

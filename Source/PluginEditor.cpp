@@ -60,9 +60,26 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     sidechainInputCombo.addItem ("None", 1);
 
     linkButton.setButtonText ("LINK");
-    sp950LinkButton.setButtonText ("LINK");
+    crushLinkButton.setButtonText ("LINK");
     extButton.setButtonText ("EXT");
     fineButton.setButtonText ("FINE");
+
+    compOnButton.setButtonText ("ON");
+    crushOnButton.setButtonText ("ON");
+    compOnButton.setClickingTogglesState (true);
+    crushOnButton.setClickingTogglesState (true);
+
+    // Preset controls
+    refreshPresetList();
+    presetCombo.onChange = [this] { loadSelectedPreset(); };
+    savePresetButton.onClick = [this] { savePresetClicked(); };
+    presetMenuButton.onClick = [this] { showPresetMenu(); };
+
+    addAndMakeVisible (presetCombo);
+    addAndMakeVisible (savePresetButton);
+    addAndMakeVisible (presetMenuButton);
+    addAndMakeVisible (compOnButton);
+    addAndMakeVisible (crushOnButton);
 
     addAndMakeVisible (thresholdSlider);
     addAndMakeVisible (ratioSlider);
@@ -88,7 +105,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     addAndMakeVisible (layoutCombo);
     addAndMakeVisible (mixSlider);
     addAndMakeVisible (outSlider);
-    addAndMakeVisible (sp950LinkButton);
+    addAndMakeVisible (crushLinkButton);
 
     addAndMakeVisible (driveLabel);
     addAndMakeVisible (detuneLabel);
@@ -108,6 +125,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     makeupAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "makeup", makeupSlider);
     hpfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, "sidechain_hpf", hpfCombo);
     linkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "link", linkButton);
+    compOnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "comp_on", compOnButton);
 
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "drive", driveSlider);
     detuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "detune", detuneSlider);
@@ -117,8 +135,10 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     layoutAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, "layout", layoutCombo);
     mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "mix", mixSlider);
     outAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "out", outSlider);
-    sp950LinkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "sp950_link", sp950LinkButton);
+    crushLinkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "crush_link", crushLinkButton);
+    crushOnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "crush_on", crushOnButton);
 
+    syncStageEnableLabels();
     startTimerHz (30);
 }
 
@@ -195,11 +215,6 @@ void NINE50AudioProcessorEditor::paint (juce::Graphics& g)
     g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 26.0f, juce::Font::bold)));
     g.drawText ("NINE50", header.reduced (18.0f, 0.0f), juce::Justification::centredLeft, false);
 
-    g.setColour (NINE50Colours::labelDim);
-    g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 12.0f, juce::Font::plain)));
-    g.drawText ("FRENCH-TOUCH SIDECHAIN", header.reduced (18.0f, 0.0f),
-                juce::Justification::centredRight, false);
-
     const auto band = getContentBand().toFloat();
     const float sideW = (band.getWidth() - static_cast<float> (kMeterW)) * 0.5f;
     const float titleY = static_cast<float> (kHeaderH + kPadTop);
@@ -207,17 +222,18 @@ void NINE50AudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour (NINE50Colours::amber);
     g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 13.0f, juce::Font::bold)));
     g.drawText ("COMPRESSOR",
-                juce::Rectangle<float> (band.getX(), titleY, sideW, 16.0f),
+                juce::Rectangle<float> (band.getX(), titleY, sideW - 78.0f, 16.0f),
                 juce::Justification::centredLeft, false);
-    g.drawText ("SP950",
-                juce::Rectangle<float> (band.getX() + sideW + static_cast<float> (kMeterW), titleY, sideW, 16.0f),
+    g.drawText ("BITCRUSH",
+                juce::Rectangle<float> (band.getX() + sideW + static_cast<float> (kMeterW), titleY,
+                                        sideW - 78.0f, 16.0f),
                 juce::Justification::centredLeft, false);
 
     g.setColour (NINE50Colours::sectionLine);
     g.fillRect (band.getX(), titleY + 17.0f, sideW - 6.0f, 1.0f);
     g.fillRect (band.getX() + sideW + static_cast<float> (kMeterW), titleY + 17.0f, sideW - 6.0f, 1.0f);
 
-    // Three matched wells — identical ceiling/floor across compressor / meter / SP950
+    // Three matched wells — identical ceiling/floor across compressor / meter / bitcrush
     auto drawWell = [&g] (juce::Rectangle<float> r)
     {
         g.setColour (NINE50Colours::headerBg.withAlpha (0.55f));
@@ -235,6 +251,30 @@ void NINE50AudioProcessorEditor::paint (juce::Graphics& g)
 
 void NINE50AudioProcessorEditor::resized()
 {
+    // Header preset bar
+    {
+        auto header = getLocalBounds().removeFromTop (kHeaderH).reduced (14, 10);
+        header.removeFromLeft (110); // brand space
+        presetMenuButton.setBounds (header.removeFromRight (34));
+        header.removeFromRight (6);
+        savePresetButton.setBounds (header.removeFromRight (56));
+        header.removeFromRight (8);
+        presetCombo.setBounds (header);
+    }
+
+    // Stage ON/BYPASS toggles sit in the section title row
+    {
+        auto titleRow = getLocalBounds();
+        titleRow.removeFromTop (kHeaderH + kPadTop);
+        titleRow = titleRow.removeFromTop (kTitleH).reduced (kPadX, 0);
+        const int colW = (titleRow.getWidth() - kMeterW) / 2;
+        auto leftTitle = titleRow.removeFromLeft (colW);
+        titleRow.removeFromLeft (kMeterW);
+        auto rightTitle = titleRow;
+        compOnButton.setBounds (leftTitle.removeFromRight (72).withSizeKeepingCentre (72, 18));
+        crushOnButton.setBounds (rightTitle.removeFromRight (72).withSizeKeepingCentre (72, 18));
+    }
+
     auto band = getContentBand();
     meterWellBounds = band;
 
@@ -278,7 +318,7 @@ void NINE50AudioProcessorEditor::resized()
             extButton.setBounds (toggles.removeFromLeft (toggles.getWidth() / 2).reduced (2, 0));
             fineButton.setBounds (toggles.reduced (2, 0));
             extras.removeFromTop (4);
-            sp950LinkButton.setBounds (extras.removeFromTop (22));
+            crushLinkButton.setBounds (extras.removeFromTop (22));
         }
     };
 
@@ -320,5 +360,130 @@ void NINE50AudioProcessorEditor::resized()
 
 void NINE50AudioProcessorEditor::timerCallback()
 {
-    grMeter.setGainReduction (audioProcessor.compressor.getGainReduction());
+    syncStageEnableLabels();
+
+    const bool compOn = compOnButton.getToggleState();
+    grMeter.setGainReduction (compOn ? audioProcessor.compressor.getGainReduction() : 0.0f);
+}
+
+void NINE50AudioProcessorEditor::syncStageEnableLabels()
+{
+    const auto sync = [] (juce::ToggleButton& button)
+    {
+        const auto* expected = button.getToggleState() ? "ON" : "BYPASS";
+        if (button.getButtonText() != expected)
+            button.setButtonText (expected);
+    };
+
+    sync (compOnButton);
+    sync (crushOnButton);
+}
+
+void NINE50AudioProcessorEditor::refreshPresetList()
+{
+    auto& presets = audioProcessor.presetManager;
+    presets.refreshUserPresets();
+
+    presetCombo.clear (juce::dontSendNotification);
+    const auto names = presets.getPresetNames();
+    for (int i = 0; i < names.size(); ++i)
+        presetCombo.addItem (names[i], i + 1);
+
+    const int idx = presets.getCurrentIndex();
+    if (presets.getNumPresets() > 0)
+        presetCombo.setSelectedItemIndex (idx, juce::dontSendNotification);
+}
+
+void NINE50AudioProcessorEditor::loadSelectedPreset()
+{
+    const int idx = presetCombo.getSelectedItemIndex();
+    if (idx >= 0)
+        audioProcessor.presetManager.loadPreset (idx);
+}
+
+void NINE50AudioProcessorEditor::savePresetClicked()
+{
+    auto& presets = audioProcessor.presetManager;
+
+    if (! presets.isFactoryPreset (presets.getCurrentIndex()))
+    {
+        if (presets.saveCurrentUserPreset())
+            return;
+    }
+
+    showSaveAsDialog();
+}
+
+void NINE50AudioProcessorEditor::showSaveAsDialog()
+{
+    auto& presets = audioProcessor.presetManager;
+    auto* aw = new juce::AlertWindow ("Save Preset As",
+                                      "Name for the new preset:",
+                                      juce::MessageBoxIconType::NoIcon);
+    aw->addTextEditor ("name", presets.getCurrentName().isNotEmpty()
+                                   ? presets.getCurrentName() + " copy"
+                                   : "My Preset");
+    aw->addButton ("Save", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    aw->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+    aw->enterModalState (true, juce::ModalCallbackFunction::create ([this, aw] (int result)
+    {
+        if (result == 1)
+        {
+            const auto name = aw->getTextEditorContents ("name");
+            if (audioProcessor.presetManager.saveAsUserPreset (name))
+                refreshPresetList();
+        }
+    }), true);
+}
+
+void NINE50AudioProcessorEditor::showPresetMenu()
+{
+    juce::PopupMenu menu;
+    menu.addItem (1, "Save As...");
+    menu.addItem (2, "Delete User Preset",
+                  ! audioProcessor.presetManager.isFactoryPreset (
+                      audioProcessor.presetManager.getCurrentIndex()));
+    menu.addSeparator();
+    menu.addItem (3, "Reveal Presets Folder");
+    menu.addItem (4, "Init");
+
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&presetMenuButton),
+                        [this] (int result)
+                        {
+                            auto& presets = audioProcessor.presetManager;
+
+                            if (result == 1)
+                            {
+                                showSaveAsDialog();
+                            }
+                            else if (result == 2)
+                            {
+                                auto* aw = new juce::AlertWindow (
+                                    "Delete Preset",
+                                    "Delete \"" + presets.getCurrentName() + "\"?",
+                                    juce::MessageBoxIconType::WarningIcon);
+                                aw->addButton ("Delete", 1);
+                                aw->addButton ("Cancel", 0);
+                                aw->enterModalState (true, juce::ModalCallbackFunction::create (
+                                                               [this, aw] (int r)
+                                                               {
+                                                                   juce::ignoreUnused (aw);
+                                                                   if (r == 1
+                                                                       && audioProcessor.presetManager
+                                                                              .deleteCurrentUserPreset())
+                                                                       refreshPresetList();
+                                                               }),
+                                                     true);
+                            }
+                            else if (result == 3)
+                            {
+                                presets.getUserPresetsDirectory().revealToUser();
+                            }
+                            else if (result == 4)
+                            {
+                                presets.loadFactoryProgram (0);
+                                refreshPresetList();
+                            }
+                        });
 }

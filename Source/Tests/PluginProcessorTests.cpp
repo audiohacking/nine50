@@ -41,7 +41,7 @@ public:
             auto* makeupParam = processor.parameters.getParameter(NINE50AudioProcessor::kMakeup);
             expect(makeupParam != nullptr, "Makeup parameter should exist");
 
-            // Check SP950 parameters
+            // Check bitcrush parameters
             auto* driveParam = processor.parameters.getParameter(NINE50AudioProcessor::kDrive);
             expect(driveParam != nullptr, "Drive parameter should exist");
 
@@ -120,7 +120,7 @@ public:
             juce::MidiBuffer midi;
             processor.processBlock(buffer, midi);
 
-            // Without sidechain, only SP950 processing applies
+            // Without sidechain, only bitcrush processing applies
             // With default settings (mix=100%, filter=99 off, drive=0, out=0), signal should pass through
             expect(std::abs(buffer.getSample(0, 0) - 0.5f) < 0.01f, "Signal should pass through with default settings");
         });

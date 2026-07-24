@@ -19,12 +19,14 @@ target_sources(NINE50
         PluginEditor.h
         SidechainCompressor.cpp
         SidechainCompressor.h
-        SP950Emulation.cpp
-        SP950Emulation.h
+        BitCrushEmulation.cpp
+        BitCrushEmulation.h
         GainReductionMeter.cpp
         GainReductionMeter.h
         NINE50LookAndFeel.cpp
         NINE50LookAndFeel.h
+        PresetManager.cpp
+        PresetManager.h
 )
 
 juce_generate_juce_header(NINE50)
@@ -61,10 +63,12 @@ if(BUILD_SCREENSHOT)
             GainReductionMeter.h
             NINE50LookAndFeel.cpp
             NINE50LookAndFeel.h
+            PresetManager.cpp
+            PresetManager.h
             SidechainCompressor.cpp
             SidechainCompressor.h
-            SP950Emulation.cpp
-            SP950Emulation.h)
+            BitCrushEmulation.cpp
+            BitCrushEmulation.h)
 
     target_compile_definitions(NINE50Screenshot PRIVATE
         JucePlugin_Name="NINE50"
@@ -100,7 +104,7 @@ if(BUILD_TESTING)
         PRIVATE
             Tests/Main.cpp
             Tests/SidechainCompressorTests.cpp
-            Tests/SP950EmulationTests.cpp
+            Tests/BitCrushEmulationTests.cpp
             Tests/PluginProcessorTests.cpp
             PluginProcessor.cpp
             PluginProcessor.h
@@ -110,10 +114,12 @@ if(BUILD_TESTING)
             GainReductionMeter.h
             NINE50LookAndFeel.cpp
             NINE50LookAndFeel.h
+            PresetManager.cpp
+            PresetManager.h
             SidechainCompressor.cpp
             SidechainCompressor.h
-            SP950Emulation.cpp
-            SP950Emulation.h)
+            BitCrushEmulation.cpp
+            BitCrushEmulation.h)
 
     target_compile_definitions(NINE50Tests PRIVATE
         JUCE_UNIT_TESTS=1

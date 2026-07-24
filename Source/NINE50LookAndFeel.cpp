@@ -177,6 +177,37 @@ void NINE50LookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton&
                       juce::Justification::centred, 1);
 }
 
+void NINE50LookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button,
+                                              const juce::Colour& backgroundColour,
+                                              bool shouldDrawButtonAsHighlighted,
+                                              bool shouldDrawButtonAsDown)
+{
+    juce::ignoreUnused (backgroundColour);
+
+    auto bounds = button.getLocalBounds().toFloat().reduced (1.0f);
+    auto fill = NINE50Colours::buttonOff;
+    if (shouldDrawButtonAsDown)
+        fill = NINE50Colours::buttonOn;
+    else if (shouldDrawButtonAsHighlighted)
+        fill = fill.brighter (0.08f);
+
+    g.setColour (fill);
+    g.fillRoundedRectangle (bounds, 3.0f);
+    g.setColour (shouldDrawButtonAsDown ? NINE50Colours::amber : NINE50Colours::sectionLine);
+    g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
+}
+
+void NINE50LookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
+                                        bool shouldDrawButtonAsHighlighted,
+                                        bool shouldDrawButtonAsDown)
+{
+    juce::ignoreUnused (shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+    g.setFont (makeFont (11.0f, true));
+    g.setColour (NINE50Colours::label);
+    g.drawFittedText (button.getButtonText(), button.getLocalBounds().reduced (2, 0),
+                      juce::Justification::centred, 1);
+}
+
 void NINE50LookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, bool isButtonDown,
                                       int buttonX, int buttonY, int buttonW, int buttonH,
                                       juce::ComboBox& box)

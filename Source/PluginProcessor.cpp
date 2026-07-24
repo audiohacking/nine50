@@ -16,6 +16,7 @@ NINE50AudioProcessor::NINE50AudioProcessor()
                       std::make_unique<juce::AudioParameterFloat>(kMakeup, "Makeup", 0.0f, 30.0f, 0.0f),
                       std::make_unique<juce::AudioParameterChoice>(kSidechainHPF, "HPF", juce::StringArray{"Off", "100", "200", "300"}, 0),
                       std::make_unique<juce::AudioParameterBool>(kLink, "Link", false),
+                      std::make_unique<juce::AudioParameterBool>(kCompOn, "Compressor On", true),
 
                       std::make_unique<juce::AudioParameterFloat>(kDrive, "Drive", -12.0f, 12.0f, 0.0f),
                       std::make_unique<juce::AudioParameterFloat>(kDetune, "Detune", -15.0f, 15.0f, 0.0f),
@@ -26,8 +27,10 @@ NINE50AudioProcessor::NINE50AudioProcessor()
                           juce::StringArray{"Mono Sum", "Mono L", "Mono R", "Stereo", "Stereo L", "Stereo R", "Mid/Side"}, 3),
                       std::make_unique<juce::AudioParameterFloat>(kMix, "Mix", 0.0f, 100.0f, 100.0f),
                       std::make_unique<juce::AudioParameterFloat>(kOut, "Out", -12.0f, 12.0f, 0.0f),
-                      std::make_unique<juce::AudioParameterBool>(kSP950Link, "SP950 Link", false),
-                  }) {
+                      std::make_unique<juce::AudioParameterBool>(kCrushLink, "Drive/Out Link", false),
+                      std::make_unique<juce::AudioParameterBool>(kCrushOn, "Bitcrush On", true),
+                  }),
+      presetManager (parameters) {
 }
 
 NINE50AudioProcessor::~NINE50AudioProcessor() {
@@ -72,12 +75,12 @@ juce::AudioProcessorEditor* NINE50AudioProcessor::createEditor() {
 void NINE50AudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
     const int numChannels = juce::jmin(getMainBusNumInputChannels(), 2);
     compressor.prepare(sampleRate, samplesPerBlock, numChannels);
-    sp950.prepare(sampleRate, samplesPerBlock, numChannels);
+    bitCrush.prepare(sampleRate, samplesPerBlock, numChannels);
 }
 
 void NINE50AudioProcessor::releaseResources() {
     compressor.reset();
-    sp950.reset();
+    bitCrush.reset();
 }
 
 void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
@@ -103,6 +106,7 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     const float makeup = *parameters.getRawParameterValue(kMakeup);
     const int hpfChoice = static_cast<int>(*parameters.getRawParameterValue(kSidechainHPF));
     const bool link = static_cast<bool>(*parameters.getRawParameterValue(kLink));
+    const bool compOn = static_cast<bool>(*parameters.getRawParameterValue(kCompOn));
 
     const float drive = *parameters.getRawParameterValue(kDrive);
     const float detune = *parameters.getRawParameterValue(kDetune);
@@ -112,7 +116,8 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     const int layout = static_cast<int>(*parameters.getRawParameterValue(kLayout));
     const float mix = *parameters.getRawParameterValue(kMix) / 100.0f;
     const float out = *parameters.getRawParameterValue(kOut);
-    const bool sp950Link = static_cast<bool>(*parameters.getRawParameterValue(kSP950Link));
+    const bool crushLink = static_cast<bool>(*parameters.getRawParameterValue(kCrushLink));
+    const bool crushOn = static_cast<bool>(*parameters.getRawParameterValue(kCrushOn));
 
     // Map HPF choice to Hz
     float hpf_Hz = 0.0f;
@@ -120,13 +125,15 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     else if (hpfChoice == 2) hpf_Hz = 200.0f;
     else if (hpfChoice == 3) hpf_Hz = 300.0f;
 
-    // Process sidechain compressor if sidechain input is available
-    if (sidechainBuffer.getNumSamples() > 0) {
+    // Sidechain compressor (bypassable)
+    if (compOn && sidechainBuffer.getNumSamples() > 0) {
         compressor.process(sidechainBuffer, buffer, threshold, ratio, attack, release, makeup, hpf_Hz, link);
     }
 
-    // Process SP950 emulation
-    sp950.process(buffer, drive, detune, ext, fine, filter, layout, mix, out, sp950Link);
+    // Bitcrush / downsample stage (SP-1200 / S950 character)
+    if (crushOn) {
+        bitCrush.process(buffer, drive, detune, ext, fine, filter, layout, mix, out, crushLink);
+    }
 }
 
 //==============================================================================
@@ -161,20 +168,21 @@ bool NINE50AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) co
 
 //==============================================================================
 int NINE50AudioProcessor::getNumPrograms() {
-    return 1;
+    return juce::jmax (1, presetManager.getNumFactoryPrograms());
 }
 
 int NINE50AudioProcessor::getCurrentProgram() {
-    return 0;
+    const int factoryCount = presetManager.getNumFactoryPrograms();
+    const int idx = presetManager.getCurrentIndex();
+    return juce::jlimit (0, juce::jmax (0, factoryCount - 1), idx);
 }
 
 void NINE50AudioProcessor::setCurrentProgram(int index) {
-    juce::ignoreUnused(index);
+    presetManager.loadFactoryProgram (index);
 }
 
 const juce::String NINE50AudioProcessor::getProgramName(int index) {
-    juce::ignoreUnused(index);
-    return {};
+    return presetManager.getFactoryProgramName (index);
 }
 
 void NINE50AudioProcessor::changeProgramName(int index, const juce::String& newName) {

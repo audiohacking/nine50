@@ -2,7 +2,8 @@
 
 #include <JuceHeader.h>
 #include "SidechainCompressor.h"
-#include "SP950Emulation.h"
+#include "BitCrushEmulation.h"
+#include "PresetManager.h"
 
 class NINE50AudioProcessor : public juce::AudioProcessor {
 public:
@@ -44,7 +45,8 @@ public:
     //==============================================================================
     juce::AudioProcessorValueTreeState parameters;
     SidechainCompressor compressor;
-    SP950Emulation sp950;
+    BitCrushEmulation bitCrush;
+    PresetManager presetManager;
 
     bool isSidechainEnabled() const;
 
@@ -57,6 +59,7 @@ public:
     static constexpr const char* kMakeup = "makeup";
     static constexpr const char* kSidechainHPF = "sidechain_hpf";
     static constexpr const char* kLink = "link";
+    static constexpr const char* kCompOn = "comp_on";
 
     static constexpr const char* kDrive = "drive";
     static constexpr const char* kDetune = "detune";
@@ -66,7 +69,8 @@ public:
     static constexpr const char* kLayout = "layout";
     static constexpr const char* kMix = "mix";
     static constexpr const char* kOut = "out";
-    static constexpr const char* kSP950Link = "sp950_link";
+    static constexpr const char* kCrushLink = "crush_link";
+    static constexpr const char* kCrushOn = "crush_on";
 
 private:
     void initializeParameters();

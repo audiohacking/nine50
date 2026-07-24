@@ -1,9 +1,9 @@
-#include "SP950Emulation.h"
+#include "BitCrushEmulation.h"
 
-SP950Emulation::SP950Emulation() {
+BitCrushEmulation::BitCrushEmulation() {
 }
 
-void SP950Emulation::prepare(double sr, int spb, int channels) {
+void BitCrushEmulation::prepare(double sr, int spb, int channels) {
     sampleRate = sr;
     samplesPerBlock = spb;
     numChannels = channels;
@@ -23,7 +23,7 @@ void SP950Emulation::prepare(double sr, int spb, int channels) {
     dryBuffer.setSize(numChannels, samplesPerBlock, false, false, true);
 }
 
-void SP950Emulation::reset() {
+void BitCrushEmulation::reset() {
     std::fill(phaseAccum.begin(), phaseAccum.end(), 0.0);
 
     for (auto& interp : interpolators) {
@@ -34,7 +34,7 @@ void SP950Emulation::reset() {
     if (lpf_R) lpf_R->reset();
 }
 
-void SP950Emulation::processBitReduction(juce::AudioBuffer<float>& buffer) {
+void BitCrushEmulation::processBitReduction(juce::AudioBuffer<float>& buffer) {
     const int numSamples = buffer.getNumSamples();
 
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
@@ -52,7 +52,7 @@ void SP950Emulation::processBitReduction(juce::AudioBuffer<float>& buffer) {
     }
 }
 
-void SP950Emulation::processSampleRateReduction(juce::AudioBuffer<float>& buffer) {
+void BitCrushEmulation::processSampleRateReduction(juce::AudioBuffer<float>& buffer) {
     const int numSamples = buffer.getNumSamples();
 
     for (int ch = 0; ch < buffer.getNumChannels(); ++ch) {
@@ -80,7 +80,7 @@ void SP950Emulation::processSampleRateReduction(juce::AudioBuffer<float>& buffer
     }
 }
 
-void SP950Emulation::processDetune(juce::AudioBuffer<float>& buffer, float detune_st, bool ext, bool fine) {
+void BitCrushEmulation::processDetune(juce::AudioBuffer<float>& buffer, float detune_st, bool ext, bool fine) {
     // Calculate pitch ratio
     float maxDetune = ext ? 30.0f : 15.0f;
     detune_st = juce::jlimit(-maxDetune, maxDetune, detune_st);
@@ -105,7 +105,7 @@ void SP950Emulation::processDetune(juce::AudioBuffer<float>& buffer, float detun
     }
 }
 
-void SP950Emulation::processFilter(juce::AudioBuffer<float>& buffer, float filter_val) {
+void BitCrushEmulation::processFilter(juce::AudioBuffer<float>& buffer, float filter_val) {
     // Map 0-99 to cutoff frequency (99 = bypass)
     if (filter_val >= 98.5f) {
         // Bypass filter
@@ -131,7 +131,7 @@ void SP950Emulation::processFilter(juce::AudioBuffer<float>& buffer, float filte
     }
 }
 
-void SP950Emulation::applyLayout(juce::AudioBuffer<float>& buffer, int layout) {
+void BitCrushEmulation::applyLayout(juce::AudioBuffer<float>& buffer, int layout) {
     const int numSamples = buffer.getNumSamples();
 
     if (buffer.getNumChannels() < 2)
@@ -196,7 +196,7 @@ void SP950Emulation::applyLayout(juce::AudioBuffer<float>& buffer, int layout) {
     }
 }
 
-void SP950Emulation::applyMix(juce::AudioBuffer<float>& buffer, float mix) {
+void BitCrushEmulation::applyMix(juce::AudioBuffer<float>& buffer, float mix) {
     const int numSamples = buffer.getNumSamples();
     const float wetGain = mix;
     const float dryGain = 1.0f - mix;
@@ -211,7 +211,7 @@ void SP950Emulation::applyMix(juce::AudioBuffer<float>& buffer, float mix) {
     }
 }
 
-void SP950Emulation::process(juce::AudioBuffer<float>& buffer,
+void BitCrushEmulation::process(juce::AudioBuffer<float>& buffer,
                              float drive_dB,
                              float detune_st,
                              bool ext,

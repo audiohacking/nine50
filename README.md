@@ -1,12 +1,13 @@
 # NINE50
 
-A French-touch sidechain processor with SP950-style lo-fi emulation, inspired by Daft Punk's *Homework* era. Combines an Alesis 3630-style sidechain compressor with Emu SP-1200/Akai S950 emulation in a single VST3/AU plugin.
+A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combines an Alesis 3630-style sidechain compressor with Emu SP-1200 / Akai S950 bitcrush and downsample emulation in a single VST3/AU plugin.
 
 ![NINE50 Screenshot](docs/screenshot.png)
 
 ## Features
 
 - Modern analog-inspired UI with labeled rotary controls and amber GR metering
+- Factory presets plus user save/load (`.nine50` files in `~/Library/Audio/Presets/NINE50`)
 
 ### Sidechain Compressor
 - VCA-style feed-forward compressor with aggressive ratios (up to 10:1)
@@ -15,7 +16,7 @@ A French-touch sidechain processor with SP950-style lo-fi emulation, inspired by
 - Makeup gain compensation
 - Channel linking for stereo sidechain detection
 
-### SP950 Emulation
+### Bitcrush / Downsample (SP-1200 / S950)
 - 12-bit bit reduction with TPDF dither
 - Sample rate reduction to 26.04 kHz (SP-1200 characteristic)
 - Detune/pitch shift with semitone or fine (0.1 st) steps
@@ -80,8 +81,9 @@ See [DEVELOP.md](DEVELOP.md) for detailed development guidelines.
 1. Add NINE50 to a bus/aux track in your DAW
 2. Route a sidechain signal (e.g., kick drum) to the sidechain input
 3. Adjust the Threshold and Ratio to control ducking depth
-4. Use the SP950 section to add lo-fi character to the wet signal
-5. Fine-tune with Attack, Release, and Makeup controls
+4. Use the BITCRUSH section to add SP-1200 / S950 character to the wet signal
+5. Bypass either stage with the ON/BYPASS switches
+6. Fine-tune with Attack, Release, and Makeup controls
 
 ## License
 

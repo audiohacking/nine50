@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 
-class SP950Emulation {
+class BitCrushEmulation {
 public:
     enum Layout {
         MonoSum = 0,
@@ -15,8 +15,8 @@ public:
         NumLayouts
     };
 
-    SP950Emulation();
-    ~SP950Emulation() = default;
+    BitCrushEmulation();
+    ~BitCrushEmulation() = default;
 
     void prepare(double sampleRate, int samplesPerBlock, int numChannels);
     void reset();
@@ -43,7 +43,7 @@ private:
     int samplesPerBlock = 512;
     int numChannels = 2;
 
-    // SP950 constants
+    // SP-1200 / S950 constants
     static constexpr float targetSampleRate = 26040.0f;
     static constexpr int bitDepth = 12;
     static constexpr float bitScale = 4096.0f;
