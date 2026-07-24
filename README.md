@@ -2,27 +2,25 @@
 
 A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combines an Alesis 3630-style sidechain compressor with Emu SP-1200 / Akai S950 bitcrush and downsample emulation in a single plugin.
 
-![NINE50 Screenshot](docs/nine50-ui.png)
+![NINE50 Screenshot](docs/nine50-panel.png)
 
 ## Features
 
-- Modern analog-inspired UI with labeled rotary controls and amber GR metering
+- Analog-inspired UI with labeled rotaries, amber GR metering, and per-stage ON/BYPASS
 - Factory presets plus user save/load (`.nine50` files in `~/Library/Audio/Presets/NINE50`)
 
 ### Sidechain Compressor
 - VCA-style feed-forward compressor with aggressive ratios (up to 10:1)
-- Optional sidechain input bus for external key signals
-- High-pass filter on sidechain (100/200/300 Hz)
-- Makeup gain compensation
-- Channel linking for stereo sidechain detection
+- Optional stereo sidechain input bus for external key signals
+- High-pass filter on the sidechain key (100/200/300 Hz)
+- Makeup gain and stereo link
 
 ### Bitcrush / Downsample (SP-1200 / S950)
-- 12-bit bit reduction with TPDF dither and soft ADC headroom
-- SP-1200-style open input AA (aliases fold in on purpose), nearest-neighbour ADC, hard 12-bit midtread, ZOH + dark ~7.5 kHz output EQ (techniques from Yeh / [pitcher](https://github.com/mwcm/pitcher))
-- Detune slider: one control from mild SP (26 kHz / 12-bit) to heavy crush (~900 Hz / 5-bit, EXT → ~400 Hz / 4-bit) — pitch stays constant
-- User **HPF** (0–99, off at 0) and S950-style **LPF** (0–99, bypass at 99, true 6th-order)
-- Channel layouts: Mono Sum/L/R, Stereo, Stereo L/R/Mid/Side
-- Drive/out gain with link; dry/wet (0% = bypass)
+- Single **DETUNE** control: mild SP character (26.04 kHz / 12-bit) through heavy crush (~900 Hz / 5-bit; EXT → ~400 Hz / 4-bit) — pitch and duration stay constant
+- Open input anti-alias, nearest-neighbour ADC, hard midtread quantize, and ZOH reconstruction (Yeh / [pitcher](https://github.com/mwcm/pitcher)–inspired)
+- **LPF** (S950-style 6th-order, 0–99, bypass at 99) and **HPF** (0–99, off at 0)
+- Drive, mix, and out (with optional drive/out link)
+- Layouts: Mono Sum/L/R, Stereo, Stereo L/R/Mid/Side (wet/dry after layout)
 
 ## Requirements
 
@@ -54,7 +52,7 @@ Download the latest release from the [Releases page](https://github.com/audiohac
 ```bash
 # Clone the repository
 git clone https://github.com/audiohacking/nine50.git
-cd NINE50
+cd nine50
 
 # Configure (VST3 + AU)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -78,11 +76,10 @@ See [DEVELOP.md](DEVELOP.md) for detailed development guidelines.
 ## Usage
 
 1. Add NINE50 to a bus/aux track in your DAW
-2. Route a sidechain signal (e.g., kick drum) to the sidechain input
-3. Adjust the Threshold and Ratio to control ducking depth
-4. Use the BITCRUSH section to add SP-1200 / S950 character to the wet signal
+2. Route a sidechain signal (e.g. kick) to the sidechain input
+3. Set Threshold / Ratio for ducking; use Attack, Release, and Makeup to shape the pump
+4. In BITCRUSH, sweep **Detune** for SP grit, then shape with **LPF** / **HPF**, Drive, Mix, and Out
 5. Bypass either stage with the ON/BYPASS switches
-6. Fine-tune with Attack, Release, and Makeup controls
 
 ## License
 

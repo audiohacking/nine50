@@ -6,7 +6,7 @@
     cmake --build build --target NINE50Screenshot -j8
     ./build/Source/NINE50Screenshot_artefacts/NINE50Screenshot.app/Contents/MacOS/NINE50Screenshot
 
-  Output: docs/nine50-ui.png (relative to repo root / cwd)
+  Output: docs/nine50-panel.png (relative to repo root / cwd)
 */
 
 #include <JuceHeader.h>
@@ -44,7 +44,7 @@ public:
 
         auto outputFile = juce::File::getCurrentWorkingDirectory()
                               .getChildFile ("docs")
-                              .getChildFile ("nine50-ui.png");
+                              .getChildFile ("nine50-panel.png");
 
         outputFile.getParentDirectory().createDirectory();
         outputFile.deleteFile();
