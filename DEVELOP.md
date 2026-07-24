@@ -66,8 +66,8 @@ cmake --build build -j8 --target NINE50Tests
 
 ### Plugin Formats
 
-- **VST3** (default, all platforms)
-- **AudioUnit** (macOS only, enabled by `FORMATS VST3 AU`)
+- **VST3** on macOS, Windows, and Linux
+- **AudioUnit** on macOS only (`FORMATS` is set per-platform in `Source/CMakeLists.txt`)
 
 ## Testing
 

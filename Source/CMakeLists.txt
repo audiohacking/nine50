@@ -1,14 +1,22 @@
+# Plugin formats: AU is Apple-only; VST3 on all desktop platforms
+if (APPLE)
+    set (NINE50_FORMATS VST3 AU)
+else()
+    set (NINE50_FORMATS VST3)
+endif()
+
 # Plugin target
 juce_add_plugin(NINE50
     PLUGIN_NAME "NINE50"
     PLUGIN_CODE "N950"
     PLUGIN_CODE_DESCRIPTIVE "NINE50 VST3"
-    FORMATS VST3 AU
+    FORMATS ${NINE50_FORMATS}
     PRODUCT_NAME "NINE50"
     COMPANY_NAME "NINE50"
     VERSION 1.0.0
-    AAX_CATEGORY "AudioEffect"
-    VST3_CATEGORY "Effect"
+    VST3_CATEGORIES Fx
+    NEEDS_WEB_BROWSER FALSE
+    NEEDS_CURL FALSE
 )
 
 target_sources(NINE50

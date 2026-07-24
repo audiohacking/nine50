@@ -24,7 +24,9 @@ A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combi
 
 ## Requirements
 
-- **macOS**: 10.15 or later
+- **macOS**: 10.15 or later (VST3 + AU)
+- **Windows**: 10 or later (VST3)
+- **Linux**: modern x86_64 distro with ALSA (VST3)
 
 ## Installation
 
@@ -33,19 +35,28 @@ A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combi
 Download the latest release from the [Releases page](https://github.com/audiohacking/nine50/releases).
 
 **macOS**:
-1. Download `NINE50-macOS.zip`
+1. Download `NINE50-macOS.zip` (or the `.pkg` installer)
 2. Extract the archive
-3. Double-click `NINE50.vst3` or `NINE50.component` to install
+3. Double-click `NINE50.vst3` or `NINE50.component` to install (or run the installer)
 4. Restart your DAW
 
-> **Windows**: Support planned — coming in a future release.
+**Windows**:
+1. Download `NINE50-Windows.zip`
+2. Extract and copy `NINE50.vst3` into your VST3 folder (typically `C:\Program Files\Common Files\VST3`)
+3. Rescan plugins in your DAW
+
+**Linux**:
+1. Download `NINE50-Linux.zip`
+2. Extract and copy `NINE50.vst3` into a VST3 path (e.g. `~/.vst3` or `/usr/lib/vst3`)
+3. Rescan plugins in your DAW
 
 ### Build from Source
 
 #### Prerequisites
 
-- C++17 compatible compiler (Xcode 12+)
-- Xcode Command Line Tools
+- C++17 compatible compiler (Xcode 12+, MSVC 2019+, or GCC/Clang on Linux)
+- CMake 3.16+
+- Linux: see [JUCE Linux Dependencies](https://github.com/juce-framework/JUCE/blob/master/docs/Linux%20Dependencies.md) (ALSA, X11, FreeType, etc.)
 
 #### Build Instructions
 
@@ -54,13 +65,13 @@ Download the latest release from the [Releases page](https://github.com/audiohac
 git clone https://github.com/audiohacking/nine50.git
 cd nine50
 
-# Configure (VST3 + AU)
+# Configure (VST3 everywhere; AU on macOS)
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 
 # Build
-cmake --build build -j8
+cmake --build build -j8 --config Release
 
-# The plugin will be in build/Source/NINE50_artefacts/Release/
+# Artefacts: build/Source/NINE50_artefacts/Release/
 ```
 
 #### Build with Tests
