@@ -4,16 +4,17 @@
   Build & run:
     cmake -B build -DBUILD_SCREENSHOT=ON
     cmake --build build --target NINE50Screenshot -j8
-    ./build/Source/NINE50Screenshot
+    ./build/Source/NINE50Screenshot_artefacts/NINE50Screenshot.app/Contents/MacOS/NINE50Screenshot
 
-  Output: docs/screenshot.png (relative to repo root)
+  Output: docs/screenshot.png (relative to repo root / cwd)
 */
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-class NINE50ScreenshotApp : public juce::JUCEApplication {
+class NINE50ScreenshotApp : public juce::JUCEApplication
+{
 public:
     NINE50ScreenshotApp() = default;
 
@@ -21,53 +22,48 @@ public:
     const juce::String getApplicationVersion() override { return "1.0.0"; }
     bool moreThanOneInstanceAllowed() override { return false; }
 
-    void initialise(const juce::String&) override {
-        // Create the processor and its editor
+    void initialise (const juce::String&) override
+    {
         processor = std::make_unique<NINE50AudioProcessor>();
-        editor = std::unique_ptr<NINE50AudioProcessorEditor>(
-            dynamic_cast<NINE50AudioProcessorEditor*>(processor->createEditorAndMakeActive()));
+        editor.reset (dynamic_cast<NINE50AudioProcessorEditor*> (processor->createEditor()));
+        jassert (editor != nullptr);
 
-        jassert(editor != nullptr);
+        editor->setOpaque (true);
+        editor->addToDesktop (juce::ComponentPeer::windowIsTemporary
+                              | juce::ComponentPeer::windowIgnoresKeyPresses);
+        editor->setVisible (true);
+        editor->toFront (false);
 
-        // Lay out the editor at its natural size
-        editor->setSize(600, 400);
+        std::cout << "Editor size: " << editor->getWidth() << "x" << editor->getHeight() << std::endl;
 
-        // Process pending UI messages so layout and paint are settled
-        for (int i = 0; i < 10; ++i)
-            juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
+        for (int i = 0; i < 20; ++i)
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
 
-        // Capture the snapshot
-        auto snapshot = editor->createComponentSnapshot(editor->getLocalBounds());
+        auto snapshot = editor->createComponentSnapshot (editor->getLocalBounds(), true, 2.0f);
+        std::cout << "Snapshot size: " << snapshot.getWidth() << "x" << snapshot.getHeight() << std::endl;
 
-        // Resolve output path relative to the executable location
         auto outputFile = juce::File::getCurrentWorkingDirectory()
-                              .getChildFile("docs")
-                              .getChildFile("screenshot.png");
+                              .getChildFile ("docs")
+                              .getChildFile ("screenshot.png");
 
         outputFile.getParentDirectory().createDirectory();
+        outputFile.deleteFile();
 
         juce::PNGImageFormat png;
-        std::unique_ptr<juce::FileOutputStream> stream(new juce::FileOutputStream(outputFile));
+        juce::FileOutputStream stream (outputFile);
 
-        if (stream != nullptr && stream->openedOk()) {
-            if (png.writeImageToStream(snapshot, *stream)) {
-                std::cout << "Screenshot saved: " << outputFile.getFullPathName() << std::endl;
-            } else {
-                std::cerr << "Error: failed to write PNG" << std::endl;
-            }
-        } else {
-            std::cerr << "Error: failed to open output file" << std::endl;
-        }
+        if (stream.openedOk() && png.writeImageToStream (snapshot, stream))
+            std::cout << "Screenshot saved: " << outputFile.getFullPathName() << std::endl;
+        else
+            std::cerr << "Error: failed to write PNG" << std::endl;
 
-        // Clean up
+        editor->removeFromDesktop();
         editor.reset();
         processor.reset();
-
         quit();
     }
 
     void shutdown() override {}
-
     void systemRequestedQuit() override { quit(); }
 
 private:
@@ -75,4 +71,4 @@ private:
     std::unique_ptr<NINE50AudioProcessorEditor> editor;
 };
 
-START_JUCE_APPLICATION(NINE50ScreenshotApp)
+START_JUCE_APPLICATION (NINE50ScreenshotApp)

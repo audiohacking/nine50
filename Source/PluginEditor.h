@@ -3,20 +3,29 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "GainReductionMeter.h"
+#include "NINE50LookAndFeel.h"
 
 class NINE50AudioProcessorEditor : public juce::AudioProcessorEditor,
-                                    private juce::Timer {
+                                    private juce::Timer
+{
 public:
-    NINE50AudioProcessorEditor(NINE50AudioProcessor&);
+    NINE50AudioProcessorEditor (NINE50AudioProcessor&);
     ~NINE50AudioProcessorEditor() override;
 
-    void paint(juce::Graphics&) override;
+    void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
     void timerCallback() override;
 
+    void setupRotary (juce::Slider& slider, const juce::String& suffix);
+    void setupLabel (juce::Label& label, const juce::String& text);
+    void layoutKnob (juce::Slider& slider, juce::Label& label, juce::Rectangle<int> area);
+    juce::Rectangle<int> getContentBand() const;
+
     NINE50AudioProcessor& audioProcessor;
+    NINE50LookAndFeel lookAndFeel;
+    juce::Rectangle<int> meterWellBounds;
 
     // Sidechain Compressor controls
     juce::Slider thresholdSlider;
@@ -26,6 +35,9 @@ private:
     juce::Slider makeupSlider;
     juce::ComboBox hpfCombo;
     juce::ToggleButton linkButton;
+
+    juce::Label thresholdLabel, ratioLabel, attackLabel, releaseLabel, makeupLabel;
+    juce::Label hpfLabel, sidechainLabel;
 
     // SP950 controls
     juce::Slider driveSlider;
@@ -38,8 +50,11 @@ private:
     juce::Slider outSlider;
     juce::ToggleButton sp950LinkButton;
 
+    juce::Label driveLabel, detuneLabel, filterLabel, mixLabel, outLabel, layoutLabel;
+
     // Gain reduction meter
     GainReductionMeter grMeter;
+    juce::Label grLabel;
 
     // Sidechain input selector
     juce::ComboBox sidechainInputCombo;
@@ -63,5 +78,5 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> outAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> sp950LinkAttachment;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NINE50AudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NINE50AudioProcessorEditor)
 };

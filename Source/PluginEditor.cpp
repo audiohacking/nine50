@@ -1,198 +1,324 @@
 #include "PluginEditor.h"
 
-NINE50AudioProcessorEditor::NINE50AudioProcessorEditor(NINE50AudioProcessor& p)
-    : AudioProcessorEditor(&p), audioProcessor(p) {
-    // Set window size
-    setSize(600, 400);
+namespace
+{
+    constexpr int kHeaderH   = 48;
+    constexpr int kWindowW   = 760;
+    constexpr int kPadX      = 14;
+    constexpr int kPadTop    = 6;
+    constexpr int kPadBottom = 2;
+    constexpr int kTitleH    = 20;
+    constexpr int kKnobH     = 112;
+    constexpr int kGap       = 4;
+    constexpr int kBottomH   = 40; // label + combo footer
+    constexpr int kMeterW    = 48;
 
-    // Sidechain Compressor sliders
-    thresholdSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    thresholdSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    thresholdSlider.setRange(-60.0, 0.0, 0.1);
-    thresholdSlider.setValue(-15.0);
-
-    ratioSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    ratioSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    ratioSlider.setRange(1.0, 10.0, 0.1);
-    ratioSlider.setValue(8.0);
-
-    attackSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    attackSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    attackSlider.setRange(0.1, 50.0, 0.1);
-    attackSlider.setValue(10.0);
-
-    releaseSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    releaseSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    releaseSlider.setRange(10.0, 500.0, 1.0);
-    releaseSlider.setValue(100.0);
-
-    makeupSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    makeupSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    makeupSlider.setRange(0.0, 30.0, 0.1);
-    makeupSlider.setValue(0.0);
-
-    hpfCombo.addItemList({"Off", "100 Hz", "200 Hz", "300 Hz"}, 1);
-
-    linkButton.setButtonText("Link");
-
-    // SP950 sliders
-    driveSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    driveSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    driveSlider.setRange(-12.0, 12.0, 0.1);
-    driveSlider.setValue(0.0);
-
-    detuneSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    detuneSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    detuneSlider.setRange(-15.0, 15.0, 0.1);
-    detuneSlider.setValue(0.0);
-
-    extButton.setButtonText("Ext");
-    fineButton.setButtonText("Fine");
-
-    filterSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    filterSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    filterSlider.setRange(0.0, 99.0, 1.0);
-    filterSlider.setValue(99.0);
-
-    layoutCombo.addItemList({"Mono Sum", "Mono L", "Mono R", "Stereo", "Stereo L", "Stereo R", "Mid/Side"}, 1);
-    layoutCombo.setSelectedId(4);
-
-    mixSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    mixSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    mixSlider.setRange(0.0, 100.0, 1.0);
-    mixSlider.setValue(100.0);
-
-    outSlider.setSliderStyle(juce::Slider::LinearHorizontal);
-    outSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-    outSlider.setRange(-12.0, 12.0, 0.1);
-    outSlider.setValue(0.0);
-
-    sp950LinkButton.setButtonText("Link");
-
-    // Sidechain input selector
-    sidechainInputCombo.addItem("None", 1);
-
-    // Add and make visible all components
-    addAndMakeVisible(thresholdSlider);
-    addAndMakeVisible(ratioSlider);
-    addAndMakeVisible(attackSlider);
-    addAndMakeVisible(releaseSlider);
-    addAndMakeVisible(makeupSlider);
-    addAndMakeVisible(hpfCombo);
-    addAndMakeVisible(linkButton);
-
-    addAndMakeVisible(driveSlider);
-    addAndMakeVisible(detuneSlider);
-    addAndMakeVisible(extButton);
-    addAndMakeVisible(fineButton);
-    addAndMakeVisible(filterSlider);
-    addAndMakeVisible(layoutCombo);
-    addAndMakeVisible(mixSlider);
-    addAndMakeVisible(outSlider);
-    addAndMakeVisible(sp950LinkButton);
-
-    addAndMakeVisible(grMeter);
-    addAndMakeVisible(sidechainInputCombo);
-
-    // Create attachments
-    thresholdAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "threshold", thresholdSlider);
-    ratioAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "ratio", ratioSlider);
-    attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "attack", attackSlider);
-    releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "release", releaseSlider);
-    makeupAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "makeup", makeupSlider);
-    hpfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.parameters, "sidechain_hpf", hpfCombo);
-    linkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.parameters, "link", linkButton);
-
-    driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "drive", driveSlider);
-    detuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "detune", detuneSlider);
-    extAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.parameters, "ext", extButton);
-    fineAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.parameters, "fine", fineButton);
-    filterAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "filter", filterSlider);
-    layoutAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.parameters, "layout", layoutCombo);
-    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "mix", mixSlider);
-    outAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.parameters, "out", outSlider);
-    sp950LinkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.parameters, "sp950_link", sp950LinkButton);
-
-    // Start timer for gain reduction meter updates
-    startTimerHz(30);
+    // Knob block only — meter shares this ceiling/floor
+    constexpr int kKnobBandH = kKnobH + kGap + kKnobH;
+    constexpr int kContentH  = kTitleH + kKnobBandH + kGap + kBottomH;
+    constexpr int kWindowH   = kHeaderH + kPadTop + kContentH + kPadBottom;
 }
 
-NINE50AudioProcessorEditor::~NINE50AudioProcessorEditor() {
+NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
+    : AudioProcessorEditor (&p), audioProcessor (p)
+{
+    setLookAndFeel (&lookAndFeel);
+    setSize (kWindowW, kWindowH);
+
+    setupRotary (thresholdSlider, " dB");
+    setupRotary (ratioSlider, " :1");
+    setupRotary (attackSlider, " ms");
+    setupRotary (releaseSlider, " ms");
+    setupRotary (makeupSlider, " dB");
+    setupRotary (driveSlider, " dB");
+    setupRotary (detuneSlider, " st");
+    setupRotary (filterSlider, "");
+    setupRotary (mixSlider, " %");
+    setupRotary (outSlider, " dB");
+
+    setupLabel (thresholdLabel, "THRESH");
+    setupLabel (ratioLabel, "RATIO");
+    setupLabel (attackLabel, "ATTACK");
+    setupLabel (releaseLabel, "RELEASE");
+    setupLabel (makeupLabel, "MAKEUP");
+    setupLabel (driveLabel, "DRIVE");
+    setupLabel (detuneLabel, "DETUNE");
+    setupLabel (filterLabel, "FILTER");
+    setupLabel (mixLabel, "MIX");
+    setupLabel (outLabel, "OUT");
+    setupLabel (hpfLabel, "SC HPF");
+    setupLabel (sidechainLabel, "SIDECHAIN IN");
+    setupLabel (layoutLabel, "LAYOUT");
+    setupLabel (grLabel, "GR");
+    grLabel.setJustificationType (juce::Justification::centred);
+    grLabel.setColour (juce::Label::textColourId, NINE50Colours::amber);
+
+    hpfCombo.addItemList ({ "Off", "100 Hz", "200 Hz", "300 Hz" }, 1);
+    layoutCombo.addItemList ({ "Mono Sum", "Mono L", "Mono R", "Stereo",
+                               "Stereo L", "Stereo R", "Mid/Side" }, 1);
+    layoutCombo.setSelectedId (4);
+    sidechainInputCombo.addItem ("None", 1);
+
+    linkButton.setButtonText ("LINK");
+    sp950LinkButton.setButtonText ("LINK");
+    extButton.setButtonText ("EXT");
+    fineButton.setButtonText ("FINE");
+
+    addAndMakeVisible (thresholdSlider);
+    addAndMakeVisible (ratioSlider);
+    addAndMakeVisible (attackSlider);
+    addAndMakeVisible (releaseSlider);
+    addAndMakeVisible (makeupSlider);
+    addAndMakeVisible (hpfCombo);
+    addAndMakeVisible (linkButton);
+
+    addAndMakeVisible (thresholdLabel);
+    addAndMakeVisible (ratioLabel);
+    addAndMakeVisible (attackLabel);
+    addAndMakeVisible (releaseLabel);
+    addAndMakeVisible (makeupLabel);
+    addAndMakeVisible (hpfLabel);
+    addAndMakeVisible (sidechainLabel);
+
+    addAndMakeVisible (driveSlider);
+    addAndMakeVisible (detuneSlider);
+    addAndMakeVisible (extButton);
+    addAndMakeVisible (fineButton);
+    addAndMakeVisible (filterSlider);
+    addAndMakeVisible (layoutCombo);
+    addAndMakeVisible (mixSlider);
+    addAndMakeVisible (outSlider);
+    addAndMakeVisible (sp950LinkButton);
+
+    addAndMakeVisible (driveLabel);
+    addAndMakeVisible (detuneLabel);
+    addAndMakeVisible (filterLabel);
+    addAndMakeVisible (mixLabel);
+    addAndMakeVisible (outLabel);
+    addAndMakeVisible (layoutLabel);
+
+    addAndMakeVisible (grMeter);
+    addAndMakeVisible (grLabel);
+    addAndMakeVisible (sidechainInputCombo);
+
+    thresholdAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "threshold", thresholdSlider);
+    ratioAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "ratio", ratioSlider);
+    attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "attack", attackSlider);
+    releaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "release", releaseSlider);
+    makeupAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "makeup", makeupSlider);
+    hpfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, "sidechain_hpf", hpfCombo);
+    linkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "link", linkButton);
+
+    driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "drive", driveSlider);
+    detuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "detune", detuneSlider);
+    extAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "ext", extButton);
+    fineAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "fine", fineButton);
+    filterAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "filter", filterSlider);
+    layoutAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, "layout", layoutCombo);
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "mix", mixSlider);
+    outAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "out", outSlider);
+    sp950LinkAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "sp950_link", sp950LinkButton);
+
+    startTimerHz (30);
 }
 
-void NINE50AudioProcessorEditor::paint(juce::Graphics& g) {
-    // Background
-    g.fillAll(juce::Colours::darkgrey.darker(0.3f));
-
-    // Title bars
-    g.setColour(juce::Colours::black);
-    g.fillRect(juce::Rectangle<int>(0, 0, getWidth(), 25));
-
-    g.setColour(juce::Colours::white);
-    g.setFont(14.0f);
-    g.drawText("SIDECHAIN COMPRESSOR", juce::Rectangle<int>(0, 0, 300, 25), juce::Justification::centredLeft, false);
-    g.drawText("SP950", juce::Rectangle<int>(300, 0, 300, 25), juce::Justification::centredLeft, false);
+NINE50AudioProcessorEditor::~NINE50AudioProcessorEditor()
+{
+    setLookAndFeel (nullptr);
 }
 
-void NINE50AudioProcessorEditor::resized() {
-    const int margin = 10;
-    const int sliderWidth = 180;
-    const int sliderHeight = 20;
-    const int rowHeight = 25;
-
-    // Sidechain Compressor section (left half)
-    int y = 35;
-    int x = margin;
-
-    thresholdSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    ratioSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    attackSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    releaseSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    makeupSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-
-    // HPF combo and link button
-    hpfCombo.setBounds(x, y, 100, sliderHeight);
-    linkButton.setBounds(x + 110, y, 80, sliderHeight);
-    y += rowHeight;
-
-    // Gain reduction meter
-    grMeter.setBounds(x + sliderWidth + 10, 35, 30, 150);
-
-    // SP950 section (right half)
-    y = 35;
-    x = 310;
-
-    driveSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    detuneSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-
-    // Ext and Fine buttons side by side
-    extButton.setBounds(x, y, 60, sliderHeight);
-    fineButton.setBounds(x + 70, y, 60, sliderHeight);
-    y += rowHeight;
-
-    filterSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    layoutCombo.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    mixSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    outSlider.setBounds(x, y, sliderWidth, sliderHeight);
-    y += rowHeight;
-    sp950LinkButton.setBounds(x, y, 80, sliderHeight);
-    y += rowHeight;
-
-    // Sidechain input selector at bottom
-    sidechainInputCombo.setBounds(margin, getHeight() - 30, getWidth() - 2 * margin, 20);
+void NINE50AudioProcessorEditor::setupRotary (juce::Slider& slider, const juce::String& suffix)
+{
+    slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 68, 16);
+    slider.setTextValueSuffix (suffix);
+    slider.setColour (juce::Slider::textBoxTextColourId, NINE50Colours::lcdText);
+    slider.setColour (juce::Slider::textBoxBackgroundColourId, NINE50Colours::lcdBg);
+    slider.setColour (juce::Slider::textBoxOutlineColourId, NINE50Colours::sectionLine);
 }
 
-void NINE50AudioProcessorEditor::timerCallback() {
-    // Update gain reduction meter
-    grMeter.setGainReduction(audioProcessor.compressor.getGainReduction());
+void NINE50AudioProcessorEditor::setupLabel (juce::Label& label, const juce::String& text)
+{
+    label.setText (text, juce::dontSendNotification);
+    label.setJustificationType (juce::Justification::centred);
+    label.setColour (juce::Label::textColourId, NINE50Colours::label);
+    label.setInterceptsMouseClicks (false, false);
+}
+
+void NINE50AudioProcessorEditor::layoutKnob (juce::Slider& slider, juce::Label& label,
+                                             juce::Rectangle<int> area)
+{
+    label.setBounds (area.removeFromTop (16));
+    slider.setBounds (area);
+}
+
+juce::Rectangle<int> NINE50AudioProcessorEditor::getContentBand() const
+{
+    // Shared knob-band: ceiling = knob labels, floor = bottom of row-2 controls
+    return { kPadX,
+             kHeaderH + kPadTop + kTitleH,
+             getWidth() - 2 * kPadX,
+             kKnobBandH };
+}
+
+void NINE50AudioProcessorEditor::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    juce::ColourGradient bg (NINE50Colours::panelTop, 0.0f, 0.0f,
+                             NINE50Colours::panelBottom, 0.0f, bounds.getHeight(), false);
+    g.setGradientFill (bg);
+    g.fillRect (bounds);
+
+    juce::Random rng (0x4e3950);
+    g.setColour (juce::Colours::white.withAlpha (0.015f));
+    for (int i = 0; i < 700; ++i)
+    {
+        const float x = rng.nextFloat() * bounds.getWidth();
+        const float y = rng.nextFloat() * bounds.getHeight();
+        g.fillRect (x, y, 1.0f, 1.0f);
+    }
+
+    auto header = bounds.removeFromTop (static_cast<float> (kHeaderH));
+    g.setColour (NINE50Colours::headerBg);
+    g.fillRect (header);
+
+    juce::ColourGradient headerSheen (juce::Colours::white.withAlpha (0.04f), 0.0f, 0.0f,
+                                      juce::Colours::transparentBlack, 0.0f, header.getHeight(), false);
+    g.setGradientFill (headerSheen);
+    g.fillRect (header);
+
+    g.setColour (NINE50Colours::amber.withAlpha (0.55f));
+    g.fillRect (header.getX(), header.getBottom() - 2.0f, header.getWidth(), 2.0f);
+
+    g.setColour (NINE50Colours::brand);
+    g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 26.0f, juce::Font::bold)));
+    g.drawText ("NINE50", header.reduced (18.0f, 0.0f), juce::Justification::centredLeft, false);
+
+    g.setColour (NINE50Colours::labelDim);
+    g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 12.0f, juce::Font::plain)));
+    g.drawText ("FRENCH-TOUCH SIDECHAIN", header.reduced (18.0f, 0.0f),
+                juce::Justification::centredRight, false);
+
+    const auto band = getContentBand().toFloat();
+    const float sideW = (band.getWidth() - static_cast<float> (kMeterW)) * 0.5f;
+    const float titleY = static_cast<float> (kHeaderH + kPadTop);
+
+    g.setColour (NINE50Colours::amber);
+    g.setFont (juce::Font (juce::FontOptions ("Avenir Next Condensed", 13.0f, juce::Font::bold)));
+    g.drawText ("COMPRESSOR",
+                juce::Rectangle<float> (band.getX(), titleY, sideW, 16.0f),
+                juce::Justification::centredLeft, false);
+    g.drawText ("SP950",
+                juce::Rectangle<float> (band.getX() + sideW + static_cast<float> (kMeterW), titleY, sideW, 16.0f),
+                juce::Justification::centredLeft, false);
+
+    g.setColour (NINE50Colours::sectionLine);
+    g.fillRect (band.getX(), titleY + 17.0f, sideW - 6.0f, 1.0f);
+    g.fillRect (band.getX() + sideW + static_cast<float> (kMeterW), titleY + 17.0f, sideW - 6.0f, 1.0f);
+
+    // Three matched wells — identical ceiling/floor across compressor / meter / SP950
+    auto drawWell = [&g] (juce::Rectangle<float> r)
+    {
+        g.setColour (NINE50Colours::headerBg.withAlpha (0.55f));
+        g.fillRoundedRectangle (r, 4.0f);
+        g.setColour (NINE50Colours::sectionLine);
+        g.drawRoundedRectangle (r, 4.0f, 1.0f);
+    };
+
+    drawWell ({ band.getX(), band.getY(), sideW - 2.0f, band.getHeight() });
+    drawWell ({ band.getX() + sideW + 3.0f, band.getY(),
+                static_cast<float> (kMeterW) - 6.0f, band.getHeight() });
+    drawWell ({ band.getX() + sideW + static_cast<float> (kMeterW) + 2.0f,
+                band.getY(), sideW - 2.0f, band.getHeight() });
+}
+
+void NINE50AudioProcessorEditor::resized()
+{
+    auto band = getContentBand();
+    meterWellBounds = band;
+
+    const int colW = (band.getWidth() - kMeterW) / 2;
+    auto left = band.removeFromLeft (colW);
+    auto meterArea = band.removeFromLeft (kMeterW);
+    auto right = band;
+
+    auto layoutKnobs = [this] (juce::Rectangle<int> area, bool compressorSide,
+                               juce::Slider& k1, juce::Label& l1,
+                               juce::Slider& k2, juce::Label& l2,
+                               juce::Slider& k3, juce::Label& l3,
+                               juce::Slider& k4, juce::Label& l4,
+                               juce::Slider& k5, juce::Label& l5)
+    {
+        area = area.reduced (2, 0);
+        const int knobW = area.getWidth() / 3;
+
+        auto row1 = area.removeFromTop (kKnobH);
+        layoutKnob (k1, l1, row1.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k2, l2, row1.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k3, l3, row1.reduced (3, 0));
+
+        area.removeFromTop (kGap);
+
+        auto row2 = area; // remaining = kKnobH, flush to band floor
+        layoutKnob (k4, l4, row2.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k5, l5, row2.removeFromLeft (knobW).reduced (3, 0));
+
+        auto extras = row2.reduced (3, 6);
+        if (compressorSide)
+        {
+            hpfLabel.setBounds (extras.removeFromTop (14));
+            hpfCombo.setBounds (extras.removeFromTop (22));
+            extras.removeFromTop (4);
+            linkButton.setBounds (extras.removeFromTop (22));
+        }
+        else
+        {
+            auto toggles = extras.removeFromTop (22);
+            extButton.setBounds (toggles.removeFromLeft (toggles.getWidth() / 2).reduced (2, 0));
+            fineButton.setBounds (toggles.reduced (2, 0));
+            extras.removeFromTop (4);
+            sp950LinkButton.setBounds (extras.removeFromTop (22));
+        }
+    };
+
+    layoutKnobs (left, true,
+                 thresholdSlider, thresholdLabel,
+                 ratioSlider, ratioLabel,
+                 attackSlider, attackLabel,
+                 releaseSlider, releaseLabel,
+                 makeupSlider, makeupLabel);
+
+    layoutKnobs (right, false,
+                 driveSlider, driveLabel,
+                 detuneSlider, detuneLabel,
+                 filterSlider, filterLabel,
+                 mixSlider, mixLabel,
+                 outSlider, outLabel);
+
+    // Meter shares exact knob-band ceiling/floor
+    {
+        auto m = meterArea.reduced (5, 0);
+        grLabel.setBounds (m.removeFromTop (14));
+        grMeter.setBounds (m);
+    }
+
+    // Footer row under the shared band — flush to window bottom padding
+    const int footerY = kHeaderH + kPadTop + kTitleH + kKnobBandH + kGap;
+    const int footerX = kPadX;
+    const int footerW = (getWidth() - 2 * kPadX - kMeterW) / 2;
+
+    auto placeFooter = [] (int x, int y, int w, juce::Label& label, juce::Component& control)
+    {
+        label.setBounds (x, y, w, 14);
+        control.setBounds (x, y + 14, w, kBottomH - 14);
+    };
+
+    placeFooter (footerX, footerY, footerW - 4, sidechainLabel, sidechainInputCombo);
+    placeFooter (footerX + footerW + kMeterW + 4, footerY, footerW - 4, layoutLabel, layoutCombo);
+}
+
+void NINE50AudioProcessorEditor::timerCallback()
+{
+    grMeter.setGainReduction (audioProcessor.compressor.getGainReduction());
 }

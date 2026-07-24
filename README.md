@@ -6,6 +6,8 @@ A French-touch sidechain processor with SP950-style lo-fi emulation, inspired by
 
 ## Features
 
+- Modern analog-inspired UI with labeled rotary controls and amber GR metering
+
 ### Sidechain Compressor
 - VCA-style feed-forward compressor with aggressive ratios (up to 10:1)
 - Optional sidechain input bus for external key signals

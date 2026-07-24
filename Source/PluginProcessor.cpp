@@ -159,15 +159,6 @@ bool NINE50AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) co
     return true;
 }
 
-void NINE50AudioProcessor::busArrangementChanged(const BusesLayout& /*newLayout*/) {
-    // Re-prepare when bus layout changes (e.g. sidechain enabled/disabled)
-    if (getSampleRate() > 0) {
-        const int numChannels = juce::jmin(getMainBusNumInputChannels(), 2);
-        compressor.prepare(getSampleRate(), getBlockSize(), numChannels);
-        sp950.prepare(getSampleRate(), getBlockSize(), numChannels);
-    }
-}
-
 //==============================================================================
 int NINE50AudioProcessor::getNumPrograms() {
     return 1;

@@ -23,6 +23,8 @@ target_sources(NINE50
         SP950Emulation.h
         GainReductionMeter.cpp
         GainReductionMeter.h
+        NINE50LookAndFeel.cpp
+        NINE50LookAndFeel.h
 )
 
 juce_generate_juce_header(NINE50)
@@ -57,6 +59,8 @@ if(BUILD_SCREENSHOT)
             PluginEditor.h
             GainReductionMeter.cpp
             GainReductionMeter.h
+            NINE50LookAndFeel.cpp
+            NINE50LookAndFeel.h
             SidechainCompressor.cpp
             SidechainCompressor.h
             SP950Emulation.cpp
@@ -104,6 +108,8 @@ if(BUILD_TESTING)
             PluginEditor.h
             GainReductionMeter.cpp
             GainReductionMeter.h
+            NINE50LookAndFeel.cpp
+            NINE50LookAndFeel.h
             SidechainCompressor.cpp
             SidechainCompressor.h
             SP950Emulation.cpp

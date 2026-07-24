@@ -29,7 +29,6 @@ public:
     const juce::String getInputChannelName(int channelIndex) const override;
     const juce::String getOutputChannelName(int channelIndex) const override;
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
-    void busArrangementChanged(const BusesLayout& newLayout) override;
 
     //==============================================================================
     int getNumPrograms() override;
