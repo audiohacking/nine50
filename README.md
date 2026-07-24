@@ -4,6 +4,12 @@ A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combi
 
 ![NINE50 Screenshot](docs/nine50-panel.png)
 
+
+### Quick Demo
+https://github.com/user-attachments/assets/7cf9ae72-a290-4b09-9ca9-03956cbc2dd7
+
+
+
 ## Features
 
 - Analog-inspired UI with labeled rotaries, amber GR metering, and per-stage ON/BYPASS
