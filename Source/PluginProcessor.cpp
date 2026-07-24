@@ -19,12 +19,16 @@ NINE50AudioProcessor::NINE50AudioProcessor()
                       std::make_unique<juce::AudioParameterBool>(kCompOn, "Compressor On", true),
 
                       std::make_unique<juce::AudioParameterFloat>(kDrive, "Drive", -12.0f, 12.0f, 0.0f),
-                      std::make_unique<juce::AudioParameterFloat>(kDetune, "Detune", -15.0f, 15.0f, 0.0f),
+                      // 0 st = base 26.04 kHz ADC; more negative = pitched-up-source / detune workflow
+                      // (EXT clamps DSP to -30, otherwise -15). Pitch/duration stay constant.
+                      std::make_unique<juce::AudioParameterFloat>(kDetune, "Detune", -30.0f, 0.0f, 0.0f),
                       std::make_unique<juce::AudioParameterBool>(kExt, "Ext", false),
                       std::make_unique<juce::AudioParameterBool>(kFine, "Fine", false),
-                      std::make_unique<juce::AudioParameterFloat>(kFilter, "Filter", 0.0f, 99.0f, 99.0f),
+                      std::make_unique<juce::AudioParameterFloat>(kHpf, "HPF", 0.0f, 99.0f, 0.0f),
+                      std::make_unique<juce::AudioParameterFloat>(kFilter, "LPF", 0.0f, 99.0f, 99.0f),
                       std::make_unique<juce::AudioParameterChoice>(kLayout, "Layout",
-                          juce::StringArray{"Mono Sum", "Mono L", "Mono R", "Stereo", "Stereo L", "Stereo R", "Mid/Side"}, 3),
+                          juce::StringArray{"Mono Sum", "Mono L", "Mono R", "Stereo",
+                                            "Stereo L", "Stereo R", "Stereo Mid", "Stereo Side"}, 3),
                       std::make_unique<juce::AudioParameterFloat>(kMix, "Mix", 0.0f, 100.0f, 100.0f),
                       std::make_unique<juce::AudioParameterFloat>(kOut, "Out", -12.0f, 12.0f, 0.0f),
                       std::make_unique<juce::AudioParameterBool>(kCrushLink, "Drive/Out Link", false),
@@ -72,10 +76,18 @@ juce::AudioProcessorEditor* NINE50AudioProcessor::createEditor() {
 }
 
 //==============================================================================
+void NINE50AudioProcessor::prepareDSP (double sampleRate, int samplesPerBlock) {
+    const int numChannels = juce::jmax (1, juce::jmin (getMainBusNumInputChannels(), 2));
+    compressor.prepare (sampleRate, samplesPerBlock, numChannels);
+    bitCrush.prepare (sampleRate, samplesPerBlock, numChannels);
+
+    // Preallocate sidechain scratch so processBlock never allocates on the audio thread.
+    sidechainScratch.setSize (2, juce::jmax (1, samplesPerBlock), false, false, true);
+    sidechainScratch.clear();
+}
+
 void NINE50AudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
-    const int numChannels = juce::jmin(getMainBusNumInputChannels(), 2);
-    compressor.prepare(sampleRate, samplesPerBlock, numChannels);
-    bitCrush.prepare(sampleRate, samplesPerBlock, numChannels);
+    prepareDSP (sampleRate, samplesPerBlock);
 }
 
 void NINE50AudioProcessor::releaseResources() {
@@ -83,20 +95,18 @@ void NINE50AudioProcessor::releaseResources() {
     bitCrush.reset();
 }
 
+void NINE50AudioProcessor::processorLayoutsChanged() {
+    // Hosts (e.g. Bitwig) can enable the sidechain bus after prepareToPlay.
+    // Re-prepare so scratch buffers / channel counts stay valid.
+    if (getSampleRate() > 0.0 && getBlockSize() > 0)
+        prepareDSP (getSampleRate(), getBlockSize());
+}
+
 void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
     juce::ignoreUnused(midiMessages);
 
     if (buffer.getNumSamples() == 0)
         return;
-
-    // Get sidechain buffer if available
-    juce::AudioBuffer<float> sidechainBuffer;
-    if (auto* sidechainBus = getBus(true, 1)) {
-        if (sidechainBus->isInput() && sidechainBus->isEnabled()) {
-            auto sidechainData = getBusBuffer(buffer, true, 1);
-            sidechainBuffer.makeCopyOf(sidechainData);
-        }
-    }
 
     // Read parameters
     const float threshold = *parameters.getRawParameterValue(kThreshold);
@@ -112,6 +122,7 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     const float detune = *parameters.getRawParameterValue(kDetune);
     const bool ext = static_cast<bool>(*parameters.getRawParameterValue(kExt));
     const bool fine = static_cast<bool>(*parameters.getRawParameterValue(kFine));
+    const float hpf = *parameters.getRawParameterValue(kHpf);
     const float filter = *parameters.getRawParameterValue(kFilter);
     const int layout = static_cast<int>(*parameters.getRawParameterValue(kLayout));
     const float mix = *parameters.getRawParameterValue(kMix) / 100.0f;
@@ -125,14 +136,31 @@ void NINE50AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     else if (hpfChoice == 2) hpf_Hz = 200.0f;
     else if (hpfChoice == 3) hpf_Hz = 300.0f;
 
-    // Sidechain compressor (bypassable)
-    if (compOn && sidechainBuffer.getNumSamples() > 0) {
-        compressor.process(sidechainBuffer, buffer, threshold, ratio, attack, release, makeup, hpf_Hz, link);
+    // Sidechain compressor (bypassable). Copy into preallocated scratch — never allocate here.
+    if (compOn) {
+        if (auto* sidechainBus = getBus (true, 1)) {
+            if (sidechainBus->isEnabled()) {
+                auto sidechainData = getBusBuffer (buffer, true, 1);
+                const int scChannels = juce::jmin (sidechainData.getNumChannels(), sidechainScratch.getNumChannels());
+                const int scSamples = juce::jmin (sidechainData.getNumSamples(), sidechainScratch.getNumSamples());
+
+                if (scChannels > 0 && scSamples > 0) {
+                    for (int ch = 0; ch < scChannels; ++ch)
+                        sidechainScratch.copyFrom (ch, 0, sidechainData, ch, 0, scSamples);
+
+                    juce::AudioBuffer<float> sidechainView (sidechainScratch.getArrayOfWritePointers(),
+                                                           scChannels,
+                                                           scSamples);
+                    compressor.process (sidechainView, buffer, threshold, ratio, attack, release,
+                                        makeup, hpf_Hz, link);
+                }
+            }
+        }
     }
 
     // Bitcrush / downsample stage (SP-1200 / S950 character)
     if (crushOn) {
-        bitCrush.process(buffer, drive, detune, ext, fine, filter, layout, mix, out, crushLink);
+        bitCrush.process(buffer, drive, detune, ext, fine, hpf, filter, layout, mix, out, crushLink);
     }
 }
 

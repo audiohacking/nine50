@@ -17,13 +17,12 @@ A French-touch sidechain processor inspired by Daft Punk's *Homework* era. Combi
 - Channel linking for stereo sidechain detection
 
 ### Bitcrush / Downsample (SP-1200 / S950)
-- 12-bit bit reduction with TPDF dither
-- Sample rate reduction to 26.04 kHz (SP-1200 characteristic)
-- Detune/pitch shift with semitone or fine (0.1 st) steps
-- 6th-order Butterworth low-pass filter (bypassable)
-- Multiple channel layouts: Mono Sum, Mono L/R, Stereo, Stereo L/R, Mid/Side
-- Drive and output gain with link option
-- Dry/wet mix control
+- 12-bit bit reduction with TPDF dither and soft ADC headroom
+- SP-1200-style open input AA (aliases fold in on purpose), nearest-neighbour ADC, hard 12-bit midtread, ZOH + dark ~7.5 kHz output EQ (techniques from Yeh / [pitcher](https://github.com/mwcm/pitcher))
+- Detune slider: one control from mild SP (26 kHz / 12-bit) to heavy crush (~900 Hz / 5-bit, EXT → ~400 Hz / 4-bit) — pitch stays constant
+- User **HPF** (0–99, off at 0) and S950-style **LPF** (0–99, bypass at 99, true 6th-order)
+- Channel layouts: Mono Sum/L/R, Stereo, Stereo L/R/Mid/Side
+- Drive/out gain with link; dry/wet (0% = bypass)
 
 ## Requirements
 
@@ -93,4 +92,5 @@ See [DEVELOP.md](DEVELOP.md) for detailed development guidelines.
 
 - Inspired by the French-touch house production techniques of Daft Punk, Cassius, and others
 - SP-1200 and S950 emulation based on classic sampler characteristics
+- Downsample / ADC techniques informed by Yeh’s SP-12 circuit model and [pitcher](https://github.com/mwcm/pitcher)
 - Compressor design inspired by the Alesis 3630

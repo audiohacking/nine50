@@ -25,6 +25,7 @@ public:
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processorLayoutsChanged() override;
 
     //==============================================================================
     const juce::String getInputChannelName(int channelIndex) const override;
@@ -65,7 +66,8 @@ public:
     static constexpr const char* kDetune = "detune";
     static constexpr const char* kExt = "ext";
     static constexpr const char* kFine = "fine";
-    static constexpr const char* kFilter = "filter";
+    static constexpr const char* kHpf = "hpf";
+    static constexpr const char* kFilter = "filter"; // S950 LPF (0–99, bypass 99)
     static constexpr const char* kLayout = "layout";
     static constexpr const char* kMix = "mix";
     static constexpr const char* kOut = "out";
@@ -74,6 +76,9 @@ public:
 
 private:
     void initializeParameters();
+    void prepareDSP (double sampleRate, int samplesPerBlock);
+
+    juce::AudioBuffer<float> sidechainScratch;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NINE50AudioProcessor)
 };

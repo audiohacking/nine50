@@ -51,16 +51,27 @@ void SidechainCompressor::process(juce::AudioBuffer<float>& sidechainBuffer,
     if (sampleRate <= 0.0 || mainBuffer.getNumSamples() == 0)
         return;
 
+    if (envelopeState.empty() || hpfFilters.empty())
+        return;
+
     const int numSamples = juce::jmin(sidechainBuffer.getNumSamples(), mainBuffer.getNumSamples());
     if (numSamples == 0)
+        return;
+
+    const int scChannels = juce::jmin (numChannels,
+                                       sidechainBuffer.getNumChannels(),
+                                       static_cast<int> (envelopeState.size()),
+                                       static_cast<int> (hpfFilters.size()));
+    const int mainChannels = juce::jmin (numChannels, mainBuffer.getNumChannels());
+    if (scChannels <= 0 || mainChannels <= 0)
         return;
 
     // Update HPF if needed
     updateFilters(hpf_Hz);
 
-    // Apply HPF to sidechain signal
+    // Apply HPF to sidechain signal (scratch copy only — never the host buffer)
     if (hpf_Hz > 0.0f) {
-        for (int ch = 0; ch < juce::jmin(numChannels, sidechainBuffer.getNumChannels()); ++ch) {
+        for (int ch = 0; ch < scChannels; ++ch) {
             hpfFilters[static_cast<size_t>(ch)]->processSamples(sidechainBuffer.getWritePointer(ch), numSamples);
         }
     }
@@ -78,11 +89,11 @@ void SidechainCompressor::process(juce::AudioBuffer<float>& sidechainBuffer,
     for (int sample = 0; sample < numSamples; ++sample) {
         // RMS detection from sidechain
         float sidechainLevel = 0.0f;
-        for (int ch = 0; ch < juce::jmin(numChannels, sidechainBuffer.getNumChannels()); ++ch) {
+        for (int ch = 0; ch < scChannels; ++ch) {
             float s = sidechainBuffer.getReadPointer(ch)[sample];
             sidechainLevel += s * s;
         }
-        sidechainLevel = std::sqrt(sidechainLevel / static_cast<float>(juce::jmin(numChannels, sidechainBuffer.getNumChannels())));
+        sidechainLevel = std::sqrt(sidechainLevel / static_cast<float>(scChannels));
 
         // Update envelope with attack/release smoothing
         if (sidechainLevel > envelopeState[0]) {
@@ -93,12 +104,12 @@ void SidechainCompressor::process(juce::AudioBuffer<float>& sidechainBuffer,
 
         // If linked, copy envelope to all channels
         if (linkChannels) {
-            for (int ch = 1; ch < numChannels; ++ch) {
+            for (int ch = 1; ch < scChannels; ++ch) {
                 envelopeState[static_cast<size_t>(ch)] = envelopeState[0];
             }
         } else {
             // Per-channel detection
-            for (int ch = 1; ch < juce::jmin(numChannels, sidechainBuffer.getNumChannels()); ++ch) {
+            for (int ch = 1; ch < scChannels; ++ch) {
                 float s = sidechainBuffer.getReadPointer(ch)[sample];
                 float level = std::abs(s);
                 if (level > envelopeState[static_cast<size_t>(ch)]) {
@@ -114,7 +125,7 @@ void SidechainCompressor::process(juce::AudioBuffer<float>& sidechainBuffer,
         if (!linkChannels) {
             // Use max envelope across channels for unlinked mode
             env = 0.0f;
-            for (int ch = 0; ch < juce::jmin(numChannels, sidechainBuffer.getNumChannels()); ++ch) {
+            for (int ch = 0; ch < scChannels; ++ch) {
                 env = juce::jmax(env, envelopeState[static_cast<size_t>(ch)]);
             }
         }
@@ -135,7 +146,7 @@ void SidechainCompressor::process(juce::AudioBuffer<float>& sidechainBuffer,
         // Apply gain reduction and makeup gain to main buffer
         float gain = std::pow(10.0f, -gainReduction_dB / 20.0f) * makeup_lin;
 
-        for (int ch = 0; ch < juce::jmin(numChannels, mainBuffer.getNumChannels()); ++ch) {
+        for (int ch = 0; ch < mainChannels; ++ch) {
             mainBuffer.getWritePointer(ch)[sample] *= gain;
         }
     }

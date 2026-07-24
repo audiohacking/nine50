@@ -60,13 +60,14 @@ private:
     juce::Slider detuneSlider;
     juce::ToggleButton extButton;
     juce::ToggleButton fineButton;
-    juce::Slider filterSlider;
+    juce::Slider crushHpfSlider;
+    juce::Slider filterSlider; // LPF
     juce::ComboBox layoutCombo;
     juce::Slider mixSlider;
     juce::Slider outSlider;
     juce::ToggleButton crushLinkButton;
 
-    juce::Label driveLabel, detuneLabel, filterLabel, mixLabel, outLabel, layoutLabel;
+    juce::Label driveLabel, detuneLabel, crushHpfLabel, filterLabel, mixLabel, outLabel, layoutLabel;
 
     // Gain reduction meter
     GainReductionMeter grMeter;
@@ -90,6 +91,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> detuneAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> extAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> fineAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> crushHpfAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> filterAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> layoutAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAttachment;

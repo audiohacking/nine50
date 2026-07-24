@@ -6,8 +6,9 @@ namespace
     using PV = std::map<juce::String, float>;
 
     PV makePreset (float threshold, float ratio, float attack, float release, float makeup,
-                   float hpf, float link, float compOn,
-                   float drive, float detune, float ext, float fine, float filter,
+                   float scHpf, float link, float compOn,
+                   float drive, float detune, float ext, float fine,
+                   float crushHpf, float filter,
                    float layout, float mix, float out, float crushLink, float crushOn)
     {
         return {
@@ -16,13 +17,14 @@ namespace
             { NINE50AudioProcessor::kAttack, attack },
             { NINE50AudioProcessor::kRelease, release },
             { NINE50AudioProcessor::kMakeup, makeup },
-            { NINE50AudioProcessor::kSidechainHPF, hpf },
+            { NINE50AudioProcessor::kSidechainHPF, scHpf },
             { NINE50AudioProcessor::kLink, link },
             { NINE50AudioProcessor::kCompOn, compOn },
             { NINE50AudioProcessor::kDrive, drive },
             { NINE50AudioProcessor::kDetune, detune },
             { NINE50AudioProcessor::kExt, ext },
             { NINE50AudioProcessor::kFine, fine },
+            { NINE50AudioProcessor::kHpf, crushHpf },
             { NINE50AudioProcessor::kFilter, filter },
             { NINE50AudioProcessor::kLayout, layout },
             { NINE50AudioProcessor::kMix, mix },
@@ -56,42 +58,42 @@ void PresetManager::buildFactoryPresets()
     // Defaults matching parameter constructors
     add ("Init",
          makePreset (-15.0f, 8.0f, 10.0f, 100.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                     0.0f, 0.0f, 0.0f, 0.0f, 99.0f, 3.0f, 100.0f, 0.0f, 0.0f, 1.0f));
+                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 99.0f, 3.0f, 100.0f, 0.0f, 0.0f, 1.0f));
 
     // Classic French-touch pump — deep duck, fast release, mild grit
     add ("Homework Pump",
          makePreset (-18.0f, 8.0f, 8.0f, 80.0f, 4.0f, 1.0f, 1.0f, 1.0f,
-                     2.0f, -1.0f, 0.0f, 1.0f, 72.0f, 3.0f, 100.0f, 0.0f, 1.0f, 1.0f));
+                     2.0f, -1.0f, 0.0f, 1.0f, 0.0f, 72.0f, 3.0f, 100.0f, 0.0f, 1.0f, 1.0f));
 
     // Soft sidechain for pads/buses
     add ("Soft Duck",
          makePreset (-12.0f, 3.0f, 20.0f, 220.0f, 1.5f, 2.0f, 1.0f, 1.0f,
-                     0.0f, 0.0f, 0.0f, 0.0f, 99.0f, 3.0f, 85.0f, 0.0f, 0.0f, 1.0f));
+                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 99.0f, 3.0f, 85.0f, 0.0f, 0.0f, 1.0f));
 
     // Aggressive club bus duck + bitcrush body
     add ("Club Bus",
          makePreset (-22.0f, 10.0f, 5.0f, 60.0f, 6.0f, 1.0f, 1.0f, 1.0f,
-                     4.0f, 0.0f, 0.0f, 0.0f, 55.0f, 3.0f, 100.0f, -1.0f, 1.0f, 1.0f));
+                     4.0f, 0.0f, 0.0f, 0.0f, 8.0f, 55.0f, 3.0f, 100.0f, -1.0f, 1.0f, 1.0f));
 
     // Bitcrush character first, light duck
     add ("Sampler Dust",
          makePreset (-10.0f, 4.0f, 15.0f, 150.0f, 2.0f, 0.0f, 0.0f, 1.0f,
-                     5.0f, -2.0f, 0.0f, 1.0f, 40.0f, 3.0f, 100.0f, -2.0f, 1.0f, 1.0f));
+                     5.0f, -2.0f, 0.0f, 1.0f, 12.0f, 40.0f, 3.0f, 100.0f, -2.0f, 1.0f, 1.0f));
 
     // Filtered house — darker top, strong pump
     add ("Filter House",
          makePreset (-20.0f, 7.0f, 6.0f, 90.0f, 3.0f, 2.0f, 1.0f, 1.0f,
-                     1.5f, 1.0f, 0.0f, 1.0f, 28.0f, 3.0f, 100.0f, 0.0f, 0.0f, 1.0f));
+                     1.5f, -1.0f, 0.0f, 1.0f, 18.0f, 28.0f, 3.0f, 100.0f, 0.0f, 0.0f, 1.0f));
 
     // Mid/Side bitcrush width
     add ("MidSide Grit",
          makePreset (-16.0f, 6.0f, 12.0f, 120.0f, 2.0f, 1.0f, 1.0f, 1.0f,
-                     3.0f, -3.0f, 1.0f, 1.0f, 50.0f, 6.0f, 90.0f, -1.0f, 1.0f, 1.0f));
+                     3.0f, -3.0f, 1.0f, 1.0f, 10.0f, 50.0f, 6.0f, 90.0f, -1.0f, 1.0f, 1.0f));
 
     // Mono sum crunch — old sampler stacked mono
     add ("Mono Crush",
          makePreset (-14.0f, 5.0f, 10.0f, 100.0f, 3.0f, 0.0f, 0.0f, 1.0f,
-                     6.0f, -5.0f, 1.0f, 0.0f, 35.0f, 0.0f, 100.0f, -3.0f, 1.0f, 1.0f));
+                     6.0f, -5.0f, 1.0f, 0.0f, 15.0f, 35.0f, 0.0f, 100.0f, -3.0f, 1.0f, 1.0f));
 }
 
 juce::File PresetManager::getUserPresetsDirectory() const
@@ -291,7 +293,7 @@ std::map<juce::String, float> PresetManager::captureCurrentValues() const
         NINE50AudioProcessor::kMakeup, NINE50AudioProcessor::kSidechainHPF,
         NINE50AudioProcessor::kLink, NINE50AudioProcessor::kDrive,
         NINE50AudioProcessor::kDetune, NINE50AudioProcessor::kExt,
-        NINE50AudioProcessor::kFine, NINE50AudioProcessor::kFilter,
+        NINE50AudioProcessor::kFine, NINE50AudioProcessor::kHpf, NINE50AudioProcessor::kFilter,
         NINE50AudioProcessor::kLayout, NINE50AudioProcessor::kMix,
         NINE50AudioProcessor::kOut, NINE50AudioProcessor::kCrushLink,
         NINE50AudioProcessor::kCompOn, NINE50AudioProcessor::kCrushOn

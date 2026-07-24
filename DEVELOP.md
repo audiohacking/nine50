@@ -33,15 +33,14 @@ Source/
    - Applied to main buffer with optional makeup gain
 
 2. **Bitcrush / Downsample (SP-1200 / S950)**
-   - Drive (input gain) applied to signal
-   - Layout routing (Mono Sum, Stereo, Mid/Side, etc.)
-   - Detune (pitch shift via Lagrange interpolation)
-   - Sample rate reduction (downsample to 26.04 kHz)
-   - Bit reduction (12-bit with TPDF dither)
-   - 6th-order Butterworth LPF (bypassable at val=99)
-   - Output gain
-   - Dry/wet mix
-   - Layout routing applied to final output
+   - Layout routing first (Mono Sum/L/R affect dry; Stereo L/R/Mid/Side process one component)
+   - Drive (input gain)
+   - Open input AA (~0.666 × host Nyquist) so aliases fold in during downsample
+   - Detune → SP hardware source ratio → `effRate = 26040 / ratio`; NN sample + ZOH (pitch unchanged)
+   - Hard midtread 12-bit quantize (no dither)
+   - Dark SP output EQ (~7.5 kHz, pitcher lp1 character)
+   - User HPF (0–99) then S950 6th-order LPF (0–99, bypass 99)
+   - Output gain → dry/wet mix (mix=0 ≡ bypass)
 
 ## Building
 

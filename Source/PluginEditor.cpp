@@ -32,6 +32,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     setupRotary (makeupSlider, " dB");
     setupRotary (driveSlider, " dB");
     setupRotary (detuneSlider, " st");
+    setupRotary (crushHpfSlider, "");
     setupRotary (filterSlider, "");
     setupRotary (mixSlider, " %");
     setupRotary (outSlider, " dB");
@@ -43,7 +44,8 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     setupLabel (makeupLabel, "MAKEUP");
     setupLabel (driveLabel, "DRIVE");
     setupLabel (detuneLabel, "DETUNE");
-    setupLabel (filterLabel, "FILTER");
+    setupLabel (crushHpfLabel, "HPF");
+    setupLabel (filterLabel, "LPF");
     setupLabel (mixLabel, "MIX");
     setupLabel (outLabel, "OUT");
     setupLabel (hpfLabel, "SC HPF");
@@ -55,7 +57,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
 
     hpfCombo.addItemList ({ "Off", "100 Hz", "200 Hz", "300 Hz" }, 1);
     layoutCombo.addItemList ({ "Mono Sum", "Mono L", "Mono R", "Stereo",
-                               "Stereo L", "Stereo R", "Mid/Side" }, 1);
+                               "Stereo L", "Stereo R", "Stereo Mid", "Stereo Side" }, 1);
     layoutCombo.setSelectedId (4);
     sidechainInputCombo.addItem ("None", 1);
 
@@ -101,6 +103,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     addAndMakeVisible (detuneSlider);
     addAndMakeVisible (extButton);
     addAndMakeVisible (fineButton);
+    addAndMakeVisible (crushHpfSlider);
     addAndMakeVisible (filterSlider);
     addAndMakeVisible (layoutCombo);
     addAndMakeVisible (mixSlider);
@@ -109,6 +112,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
 
     addAndMakeVisible (driveLabel);
     addAndMakeVisible (detuneLabel);
+    addAndMakeVisible (crushHpfLabel);
     addAndMakeVisible (filterLabel);
     addAndMakeVisible (mixLabel);
     addAndMakeVisible (outLabel);
@@ -131,6 +135,7 @@ NINE50AudioProcessorEditor::NINE50AudioProcessorEditor (NINE50AudioProcessor& p)
     detuneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "detune", detuneSlider);
     extAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "ext", extButton);
     fineAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, "fine", fineButton);
+    crushHpfAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "hpf", crushHpfSlider);
     filterAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "filter", filterSlider);
     layoutAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, "layout", layoutCombo);
     mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, "mix", mixSlider);
@@ -226,7 +231,7 @@ void NINE50AudioProcessorEditor::paint (juce::Graphics& g)
                 juce::Justification::centredLeft, false);
     g.drawText ("BITCRUSH",
                 juce::Rectangle<float> (band.getX() + sideW + static_cast<float> (kMeterW), titleY,
-                                        sideW - 78.0f, 16.0f),
+                                        sideW - 200.0f, 16.0f),
                 juce::Justification::centredLeft, false);
 
     g.setColour (NINE50Colours::sectionLine);
@@ -271,8 +276,17 @@ void NINE50AudioProcessorEditor::resized()
         auto leftTitle = titleRow.removeFromLeft (colW);
         titleRow.removeFromLeft (kMeterW);
         auto rightTitle = titleRow;
+
         compOnButton.setBounds (leftTitle.removeFromRight (72).withSizeKeepingCentre (72, 18));
         crushOnButton.setBounds (rightTitle.removeFromRight (72).withSizeKeepingCentre (72, 18));
+
+        // EXT / FINE / LINK sit beside the bitcrush title
+        auto crushToggles = rightTitle.withSizeKeepingCentre (rightTitle.getWidth(), 18);
+        crushToggles.removeFromRight (4);
+        const int tw = crushToggles.getWidth() / 3;
+        extButton.setBounds (crushToggles.removeFromLeft (tw).reduced (2, 0));
+        fineButton.setBounds (crushToggles.removeFromLeft (tw).reduced (2, 0));
+        crushLinkButton.setBounds (crushToggles.reduced (2, 0));
     }
 
     auto band = getContentBand();
@@ -283,12 +297,12 @@ void NINE50AudioProcessorEditor::resized()
     auto meterArea = band.removeFromLeft (kMeterW);
     auto right = band;
 
-    auto layoutKnobs = [this] (juce::Rectangle<int> area, bool compressorSide,
-                               juce::Slider& k1, juce::Label& l1,
-                               juce::Slider& k2, juce::Label& l2,
-                               juce::Slider& k3, juce::Label& l3,
-                               juce::Slider& k4, juce::Label& l4,
-                               juce::Slider& k5, juce::Label& l5)
+    auto layoutFive = [this] (juce::Rectangle<int> area,
+                              juce::Slider& k1, juce::Label& l1,
+                              juce::Slider& k2, juce::Label& l2,
+                              juce::Slider& k3, juce::Label& l3,
+                              juce::Slider& k4, juce::Label& l4,
+                              juce::Slider& k5, juce::Label& l5)
     {
         area = area.reduced (2, 0);
         const int knobW = area.getWidth() / 3;
@@ -300,41 +314,55 @@ void NINE50AudioProcessorEditor::resized()
 
         area.removeFromTop (kGap);
 
-        auto row2 = area; // remaining = kKnobH, flush to band floor
+        auto row2 = area;
         layoutKnob (k4, l4, row2.removeFromLeft (knobW).reduced (3, 0));
         layoutKnob (k5, l5, row2.removeFromLeft (knobW).reduced (3, 0));
 
         auto extras = row2.reduced (3, 6);
-        if (compressorSide)
-        {
-            hpfLabel.setBounds (extras.removeFromTop (14));
-            hpfCombo.setBounds (extras.removeFromTop (22));
-            extras.removeFromTop (4);
-            linkButton.setBounds (extras.removeFromTop (22));
-        }
-        else
-        {
-            auto toggles = extras.removeFromTop (22);
-            extButton.setBounds (toggles.removeFromLeft (toggles.getWidth() / 2).reduced (2, 0));
-            fineButton.setBounds (toggles.reduced (2, 0));
-            extras.removeFromTop (4);
-            crushLinkButton.setBounds (extras.removeFromTop (22));
-        }
+        hpfLabel.setBounds (extras.removeFromTop (14));
+        hpfCombo.setBounds (extras.removeFromTop (22));
+        extras.removeFromTop (4);
+        linkButton.setBounds (extras.removeFromTop (22));
     };
 
-    layoutKnobs (left, true,
-                 thresholdSlider, thresholdLabel,
-                 ratioSlider, ratioLabel,
-                 attackSlider, attackLabel,
-                 releaseSlider, releaseLabel,
-                 makeupSlider, makeupLabel);
+    auto layoutSix = [this] (juce::Rectangle<int> area,
+                             juce::Slider& k1, juce::Label& l1,
+                             juce::Slider& k2, juce::Label& l2,
+                             juce::Slider& k3, juce::Label& l3,
+                             juce::Slider& k4, juce::Label& l4,
+                             juce::Slider& k5, juce::Label& l5,
+                             juce::Slider& k6, juce::Label& l6)
+    {
+        area = area.reduced (2, 0);
+        const int knobW = area.getWidth() / 3;
 
-    layoutKnobs (right, false,
-                 driveSlider, driveLabel,
-                 detuneSlider, detuneLabel,
-                 filterSlider, filterLabel,
-                 mixSlider, mixLabel,
-                 outSlider, outLabel);
+        auto row1 = area.removeFromTop (kKnobH);
+        layoutKnob (k1, l1, row1.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k2, l2, row1.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k3, l3, row1.reduced (3, 0));
+
+        area.removeFromTop (kGap);
+
+        auto row2 = area;
+        layoutKnob (k4, l4, row2.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k5, l5, row2.removeFromLeft (knobW).reduced (3, 0));
+        layoutKnob (k6, l6, row2.reduced (3, 0));
+    };
+
+    layoutFive (left,
+                thresholdSlider, thresholdLabel,
+                ratioSlider, ratioLabel,
+                attackSlider, attackLabel,
+                releaseSlider, releaseLabel,
+                makeupSlider, makeupLabel);
+
+    layoutSix (right,
+               detuneSlider, detuneLabel,
+               filterSlider, filterLabel,
+               crushHpfSlider, crushHpfLabel,
+               driveSlider, driveLabel,
+               mixSlider, mixLabel,
+               outSlider, outLabel);
 
     // Meter shares exact knob-band ceiling/floor
     {

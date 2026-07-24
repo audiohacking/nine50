@@ -49,7 +49,9 @@ public:
             expect(detuneParam != nullptr, "Detune parameter should exist");
 
             auto* filterParam = processor.parameters.getParameter(NINE50AudioProcessor::kFilter);
-            expect(filterParam != nullptr, "Filter parameter should exist");
+            expect(filterParam != nullptr, "LPF parameter should exist");
+            auto* crushHpfParam = processor.parameters.getParameter(NINE50AudioProcessor::kHpf);
+            expect(crushHpfParam != nullptr, "HPF parameter should exist");
 
             auto* mixParam = processor.parameters.getParameter(NINE50AudioProcessor::kMix);
             expect(mixParam != nullptr, "Mix parameter should exist");
@@ -125,38 +127,42 @@ public:
             juce::MidiBuffer midi;
             processor.processBlock(buffer, midi);
 
-            // Without sidechain, only bitcrush processing applies
-            // With default settings (mix=100%, filter=99 off, drive=0, out=0), signal should pass through
-            expect(std::abs(buffer.getSample(0, 0) - 0.5f) < 0.01f, "Signal should pass through with default settings");
+            // Bitcrush is on by default — output should stay finite and non-silent
+            float energy = 0.0f;
+            for (int i = 0; i < 512; ++i)
+            {
+                expect (std::isfinite (buffer.getSample (0, i)), "Output samples must be finite");
+                energy += std::abs (buffer.getSample (0, i));
+            }
+            expect (energy > 0.1f, "Crushed signal should retain energy");
         });
 
         testCase("Process block with sidechain", [&] {
             NINE50AudioProcessor processor;
-            processor.prepareToPlay(44100.0, 512);
 
-            // Create buffers
-            juce::AudioBuffer<float> mainBuffer(2, 512);
-            mainBuffer.clear();
-            for (int i = 0; i < 512; ++i) {
-                mainBuffer.setSample(0, i, 0.5f);
-                mainBuffer.setSample(1, i, 0.5f);
-            }
+            auto layout = processor.getBusesLayout();
+            layout.inputBuses.set (1, juce::AudioChannelSet::stereo());
+            expect (processor.setBusesLayout (layout), "Should enable stereo sidechain bus");
 
-            juce::AudioBuffer<float> sidechainBuffer(2, 512);
-            sidechainBuffer.clear();
+            processor.prepareToPlay (44100.0, 512);
+            processor.processorLayoutsChanged(); // simulate host enabling SC after prepare
+
+            // Main stereo + sidechain stereo in one process buffer
+            juce::AudioBuffer<float> buffer (4, 512);
+            buffer.clear();
             for (int i = 0; i < 512; ++i) {
-                sidechainBuffer.setSample(0, i, 0.9f);
-                sidechainBuffer.setSample(1, i, 0.9f);
+                buffer.setSample (0, i, 0.5f);
+                buffer.setSample (1, i, 0.5f);
+                buffer.setSample (2, i, 0.9f); // sidechain L
+                buffer.setSample (3, i, 0.9f); // sidechain R
             }
 
             juce::MidiBuffer midi;
+            processor.processBlock (buffer, midi);
 
-            // Process - should apply sidechain compression
-            // Note: In the current implementation, sidechain processing depends on bus layout
-            // This test verifies the processor doesn't crash
-            processor.processBlock(mainBuffer, midi);
-
-            expect(true, "Process block with sidechain should not crash");
+            // Sidechain ducking with hot key should reduce main level
+            expect (std::abs (buffer.getSample (0, 256)) < 0.5f,
+                    "Hot sidechain should duck the main signal");
         });
     }
 };
